@@ -116,7 +116,7 @@ node scripts/audit_html.mjs lab.html .build/audit_shots
 k12-lesson-studio/
 ├─ SKILL.md · workbuddy.json · _icon.svg · LICENSE · requirements.txt
 ├─ assets/        (three.min.js, video_stage.html, theater_base.html)
-├─ scripts/       (doctor.py, extract_textbook.py, md_to_docx.py, render_video.mjs, ppt_kit.py, audit_pptx.py, build_html.py, audit_html.mjs)
+├─ scripts/       (doctor.py, extract_textbook.py, md_to_docx.py, render_video.mjs, ppt_kit.py, audit_pptx.py, build_html.py, audit_html.mjs, verify_exam.py)
 ├─ references/    (media-prompt-engineering.md, themes.md, subject-playbooks.md, interactive-html-blueprint.md, lesson-and-exam-templates.md)
 └─ docs/images/   (GitHub README showcase WebP screenshots — excluded from WorkBuddy Open Platform 2-level ZIP)
 ```

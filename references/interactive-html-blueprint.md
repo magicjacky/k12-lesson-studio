@@ -1,15 +1,15 @@
 # 教室大屏双模式互动 HTML 工程级设计蓝图（v4.1 准确第一 × 内置引擎底盘版）
 
 > 核心理念：**第一优先是数学/几何/科学 100% 准确，第二优先才是动效视频级视觉美感！**
-> 严禁从零徒手重写 2,500 行 CSS、模态弹窗和 PK 脚手架！**必须直接复用本 Skill 内置的 `assets/theater_base.html` + `scripts/build_html.py`**，你只需编写 `config.json` 与 `scenes.js`（约 250–400 行），即可在任何学科下稳定产出零报错、零按钮失灵、零视角倒翻的离线大片网页。
+> 严禁从零徒手重写 2,500 行 CSS、模态弹窗和 PK 脚手架！**必须直接复用本 Skill 内置的 `assets/theater_base.html` + `scripts/build_html.py`**，只需在当前备课工作空间的临时目录编写 `.build/theater_config.json` 与 `.build/theater_scenes.js`（约 250–400 行），即可在任何学科下稳定产出零报错、零按钮失灵、零视角倒翻的离线大片网页。
 
 ---
 
-## 零、内置底盘 `window.THEATER` 极简接口速查（`scenes.js` 必读）
+## 零、内置底盘 `window.THEATER` 极简接口速查（编写工作空间 `.build/theater_scenes.js` 必读）
 
-`build_html.py` 会把你的 `config.json` 注入 `window.CONFIG`，把 `scenes.js` 注入 `theater_base.html` 末尾。底盘已内置顶栏、底部时间轴、拖拽 360° 旋转、离线 `<video>` 播放器（只需在 `config.json` 的 `films` 里给实景视频分镜设 `"isVideo": true`）、4 队 3D 光影柱 PK 与全局事件委托弹窗。
+`scripts/build_html.py` 会把工作空间生成的 `.build/theater_config.json` 注入 `window.CONFIG`，把 `.build/theater_scenes.js` 注入 `assets/theater_base.html` 末尾。底盘已内置顶栏、底部时间轴、拖拽 360° 旋转、离线 `<video>` 播放器（只需在 `.build/theater_config.json` 的 `films` 里给演示视频分镜设 `"isVideo": true`）、4 队 3D 光影柱 PK 与全局事件委托弹窗。
 
-在 `scenes.js` 末尾调用一次 `THEATER.registerScenes({...})` 即可接管全部非视频分镜：
+在 `.build/theater_scenes.js` 末尾调用一次 `THEATER.registerScenes({...})` 即可接管全部非视频分镜：
 ```js
 const T = window.THEATER;
 // 可直接复用：
@@ -32,7 +32,7 @@ T.registerScenes({
 
 ---
 
-## 一、写 `scenes.js` 前的 5 条工程铁律（每条必须先算清、再落码！）
+## 一、编写 `.build/theater_scenes.js` 前的 5 条工程铁律（每条必须先算清、再落码！）
 
 ### 1. 数学与几何不变量合同（Pre-Code Geometry Contract）
 在写任何 3D/2D 动画代码前，必须先在注释中写出并校验每段动画的**初态（`t=0`）与终态（`t=1`）精确坐标方程**：
@@ -64,8 +64,8 @@ T.registerScenes({
 | 右上导演控制卡 | `x: 1048..1264, y: 70..420` | 滑块/份数/情景/倍速/重播/跳转按钮（宽 `216px`） |
 | 底部字幕 + 电影时间轴 | `x: 14..1266, y: 580..708` | 左下流光电影字幕 + 底部 64px 导演台（分镜切换/播放/进度轨/关键帧） |
 
-### 4. 离线内嵌实景演示视频分镜 + 动态弹窗事件委托铁律
-- **实景演示分镜（如 `04 实景倒沙`）**：将 `VideoGen` 生成并转码后的轻量 H.264 MP4（`960×548`，约 `0.8–1.4 MB`）以 base64 Data URI 写入离线 `<video>`；配备 `0.5× / 0.75× / 1× / 1.25×` 倍速、重播、与底部进度条/播放键/顶栏动效与声音开关双向联动、随播放秒数跳步的底部流光字幕；视频框严格落于中央安全区，绝不遮挡标题或字幕。
+### 4. 离线内嵌 3D 代码演示视频分镜 + 动态弹窗事件委托铁律
+- **3D 代码演示视频分镜（如 `04 倒沙演示`）**：将 `scripts/render_video.mjs` 渲染并转码后的轻量 H.264 MP4（`960×540`，约 `0.8–1.4 MB`）通过 `scripts/build_html.py --video` 以 base64 Data URI 写入离线 `<video>`；配备 `0.5× / 0.75× / 1× / 1.25×` 倍速、重播、与底部进度条/播放键/顶栏动效与声音开关双向联动、随播放秒数跳步的底部流光字幕；视频框严格落于中央安全区，绝不遮挡标题或字幕。
 - **动态按钮事件委托与类名隔离**：
   - 凡由 `innerHTML` 动态注入弹窗或面板的关闭/操作按钮（如 `#expDlg` 右上角 `.xBtn` 与底部 `[data-close]`），**一律使用 `document.addEventListener('click', ...)` 事件委托**，严禁初始化静态绑定导致点不动；
   - 独立跳转按钮（如 `#jumpSandVid`）严禁复用情景单选按钮类名（`.scn`），避免误触发情景重绘；

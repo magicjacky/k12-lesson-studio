@@ -219,7 +219,8 @@ k12-lesson-studio/
 │  ├─ ppt_kit.py                     # 16:9 博物馆杂志可编辑 PPT 与原生矢量图解库
 │  ├─ audit_pptx.py                  # PPTX 重复图拦截、重叠检测、Notes 与视频验真脚本
 │  ├─ build_html.py                  # 离线单文件大屏互动网页拼装器
-│  └─ audit_html.mjs                 # 离线 HTML 零外链、弹窗实点与 4×4 关键帧自动验收
+│  ├─ audit_html.mjs                 # 离线 HTML 零外链、弹窗实点与 4×4 关键帧自动验收
+│  └─ verify_exam.py                 # 100 分试卷分值核验与批量阅卷单源防矛盾校验器
 └─ references/
    ├─ media-prompt-engineering.md    # 4 槽位视觉防重复矩阵与 Three.js 视频脚本规范
    ├─ themes.md                      # 11 页视觉零重复分镜矩阵与 4 套学科策展色板

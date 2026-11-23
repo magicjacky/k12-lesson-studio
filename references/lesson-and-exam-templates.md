@@ -35,42 +35,26 @@
 
 ## 三、步骤 5：防幻觉出卷与程序化阅卷诊断硬核规范
 
-### 1. 出卷前必跑 Python 验算断言脚本（`verify_exam.py`）
-- 严禁心算写卷子！所有题目分值与数值答案必须写进 Python 脚本并执行断言通过后再生成 `.docx`：
+### 1. 出卷前必跑内置验算校验脚本（`scripts/verify_exam.py`）
+- 严禁心算写卷子！先在当前工作空间 `.build/` 临时目录生成结构化试卷数据并调用本技能内置的 `{skill_dir}/scripts/verify_exam.py` 校验通过后，再渲染 `.docx`：
 
-```python
-# 1. 分值总和断言：各大题小题分值之和严格等于 100
-assert sum(section_totals) == 100, f"Total score {sum(section_totals)} != 100"
-
-# 2. 每道计算/应用题用学段允许的纯算式正向计算 + 反向核验（小学锁定 PI = 3.14）
-PI = 3.14
-# 明确校验：所有中间步骤与最终答案均由同一变量导出，严禁手敲不一致的算式文本！
-
-# 3. 双卷同步生成：
-#    - 学生卷（2 页 A4 内）：姓名/班级/得分栏 + 留足虚线答题空行，0 答案泄露
-#    - 教师卷（3 页 A4 内）：红字答案 + 纯学段分步算式 + 明确采分点与扣分细则（如“漏乘 1/3 扣 3 分”）
+```bash
+python "{skill_dir}/scripts/verify_exam.py" exam .build/exam_spec.json --target-total 100
 ```
 
-### 2. 批量阅卷诊断：杜绝“表文矛盾”的程序化汇总铁律
-- 批改 `05-课后测改补/课后测试/` 全部答卷时，必须先将每份卷子的**逐题得分与错因标签**录成结构化 JSON/Python 字典，**所有统计数字与正文结论语句必须由 Python 直接渲染生成，严禁人工另写总结数字**：
+- 核心校验规则：
+  1. **分值总和严格等于 100**：各题型与小题分值加总 `grand_total == 100`，且题干与答案非空；
+  2. **纯学段单源计算**：每道计算/应用题用本学段允许的算式由同一组 Python 变量计算并导出步骤文本（如小学锁定 `PI = 3.14`，严禁手敲不一致的中间数）；
+  3. **双卷同步导出**（调用 `scripts/md_to_docx.py`）：学生卷（2 页 A4 内，留足虚线答题行，0 答案泄露）与教师卷（3 页 A4 内，红字答案 + 纯学段分步算式 + 明确步骤扣分标准）。
 
-```python
-# 强制不变量断言（防止“汇总表 1 人错，小结标题误写 2/4 人”！）
-for stu in students:
-    assert sum(stu["item_scores"].values()) == stu["total"], f"Score mismatch for {stu['name']}"
-    for tag, items in stu["error_tags"].items():
-        assert len(items) > 0
+### 2. 批量阅卷诊断：杜绝“表文矛盾”的单源汇总（`scripts/verify_exam.py grading`）
+- 批改 `05-课后测改补/课后测试/` 全部答卷时，先将每份卷子的逐题得分与错因标签写入工作空间 `.build/grading_records.json`，运行内置脚本做总分一致性断言与错因人数单源聚合：
 
-# 从同一数据源聚合每种错因的受影响人数与累计失分，直接填入 Markdown 标题与表格
-error_summary = {}
-for tag in all_tags:
-    affected = [s["name"] for s in students if tag in s["error_tags"]]
-    error_summary[tag] = {
-        "count": len(affected),
-        "ratio": f"{len(affected)}/{len(students)}",
-        "students": affected,
-    }
+```bash
+python "{skill_dir}/scripts/verify_exam.py" grading .build/grading_records.json
 ```
+
+- 直接使用脚本输出的 `mean`、`median` 与 `error_summary[tag]["ratio"]` 渲染诊断报告表格与小标题，彻底杜绝“表格写 1 人错、正文小标题误写 2 人”的统计矛盾。
 
 - **诚实边界**：若答卷为模拟测试样本，在报告首行注明样本属性；若为真实手写拍照卷，提示教师对潦草字迹与作图题做人工抽检复核。
 

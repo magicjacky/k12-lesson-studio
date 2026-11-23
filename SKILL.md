@@ -2,7 +2,7 @@
 name: k12-lesson-studio
 display_name: "中小学全学科课件一键制作"
 display_name_en: "K12 Lesson Studio — All-Subject Teaching Prep"
-version: "5.0.1"
+version: "5.0.2"
 license: PolyForm-Noncommercial-1.0.0
 author: "丰泽AI"
 category: education
@@ -112,15 +112,16 @@ python "{skill_dir}/scripts/doctor.py" setup --mirror
 4. 运行 `node {skill_dir}/scripts/audit_html.mjs <html路径> .build/audit_shots`（校验 0 外链、0 报错、1280×720 零溢出、`<video>` 就绪、弹窗全可点，并拼出 1 张 4×4 `audit_contact_sheet.png`），用 `ViewImage` 看这 1 张总览图核验无误后交付。
 
 ### 步骤 5：防幻觉出卷 → 程序化批量阅卷诊断 → 错题急救小卡与 3 级变式题
-- 按 `references/lesson-and-exam-templates.md` 第三节，先跑 Python 断言校验总分 `== 100` 与每题纯学段答案，输出学生卷（2 页）与教师卷（3 页）；批改 `05-课后测改补/课后测试/` 时由 Python 结构化统计杜绝表文矛盾，产出 4 页诊断报告与 2 页 A4 `错题急救小卡与3级变式题.docx`。
+- 按 `references/lesson-and-exam-templates.md` 第三节，先调用内置 `{skill_dir}/scripts/verify_exam.py exam .build/exam_spec.json` 校验总分 `== 100` 与每题纯学段答案，输出学生卷（2 页）与教师卷（3 页）；批改 `05-课后测改补/课后测试/` 时调用 `{skill_dir}/scripts/verify_exam.py grading .build/grading_records.json` 单源统计杜绝表文矛盾，产出 4 页诊断报告与 2 页 A4 `错题急救小卡与3级变式题.docx`。
 
 ---
 
-## 四、内置底盘、参考文档与自动化验真工具索引（全包 < 1 MB）
+## 四、内置底盘、参考文档与自动化验真工具索引（全包 < 0.85 MB）
 
+- `scripts/doctor.py`：纯标准库环境自检与清华镜像一键装包工具
 - `assets/three.min.js` + `assets/video_stage.html` + `scripts/render_video.mjs`：**零依赖 Three.js 确定性代码视频渲染与拟声音频合成引擎**（1280×720 30fps H.264+AAC MP4 + 封面帧 + 4×4 16 格总览图，0 角标）
 - `assets/theater_base.html` + `scripts/build_html.py`：**全学科已验证离线互动剧场引擎底盘与单文件拼装器**
 - `scripts/ppt_kit.py`：**16:9 博物馆杂志可编辑 PPT 拼装与原生矢量图解库**（含封面、离线视频页、等底等高标尺、三锥映射推导图、建筑标注蓝图、原生转场与讲稿备注）
-- `scripts/audit_pptx.py` / `scripts/audit_html.mjs`：PPTX（含**重复图片 SHA-256 拦截**、0 重叠、视频检测与 LibreOffice 单图总览）与 HTML 全自动验收脚本
+- `scripts/audit_pptx.py` / `scripts/audit_html.mjs` / `scripts/verify_exam.py`：PPTX（含**重复图片 SHA-256 拦截**、0 重叠、视频检测与 LibreOffice 单图总览）、离线 HTML 与试卷/阅卷一致性全自动验收脚本
 - `scripts/extract_textbook.py` / `scripts/md_to_docx.py`：真教材提取与 A4 Word 转换引擎
 - `references/`：`media-prompt-engineering.md`、`themes.md`、`subject-playbooks.md`、`interactive-html-blueprint.md`、`lesson-and-exam-templates.md`
