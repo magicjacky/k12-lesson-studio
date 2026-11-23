@@ -2,7 +2,7 @@
 
 <img src="_icon.svg" alt="K12 Lesson Studio" width="76" height="76" />
 
-<h1>K12 Lesson Studio · 中小学全学科一键备课</h1>
+<h1>K12 Lesson Studio · 中小学全学科课件一键制作</h1>
 
 **面向 AI Agent 的中小学全学科工程级备课技能（全包 < 0.85 MB · 零重型依赖）**
 
@@ -108,7 +108,7 @@ npx skills add https://github.com/magicjacky/k12-lesson-studio --skill k12-lesso
 
 #### 方式三：WorkBuddy 技能市场一键安装
 
-本仓库已内置 WorkBuddy 原生中文配置（`SKILL.md` 中文元数据、`workbuddy.json` 与 `_icon.svg`）。在 WorkBuddy 技能市场审核上架后，直接搜索 **「中小学全学科一键备课」** 或 **`k12-lesson-studio`** 点击安装即可启用。
+本仓库已内置 WorkBuddy 原生中文配置（`SKILL.md` 中文元数据、`workbuddy.json` 与 `_icon.svg`）。在 WorkBuddy 技能市场审核上架后，直接搜索 **「中小学全学科课件一键制作」** 或 **`k12-lesson-studio`** 点击安装即可启用。
 
 #### 方式四：手动放入技能目录
 
@@ -130,7 +130,7 @@ npx skills add https://github.com/magicjacky/k12-lesson-studio --skill k12-lesso
 
 ```text
 # 1. 核对教材并锁死禁超纲红线
-用中小学全学科一键备课技能，帮我核对 01-教材/ 里的第三单元《圆柱与圆锥》，提取本章原页节选 PDF 并输出《教材核验清单》。
+用中小学全学科课件一键制作技能，帮我核对 01-教材/ 里的第三单元《圆柱与圆锥》，提取本章原页节选 PDF 并输出《教材核验清单》。
 
 # 2. 排课时 + 出打印教案
 按刚核对好的教材做一份整章课时规划，再写出「圆锥的体积」完整教案并存成 A4 打印 Word。

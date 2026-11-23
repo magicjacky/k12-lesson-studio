@@ -1,10 +1,10 @@
 {
-  "display_name": "中小学全学科一键备课",
+  "display_name": "中小学全学科课件一键制作",
   "display_name_en": "K12 Lesson Studio — All-Subject Teaching Prep",
   "description_zh": "输入真教材 PDF，一句话跑通教案与课堂救场表、视觉零重复可改希沃 PPT、Three.js 3D 代码演示视频、断网大屏互动 PK 网页、防幻觉试卷与错题急救卡，中小学全学科通用",
   "description_en": "Turn any K12 textbook PDF into verified lesson plans, zero-duplicate editable PPTX decks, deterministic Three.js 3D teaching videos, offline interactive 3D classroom PK HTML labs, verified exams, and remediation cards",
   "examples_zh": [
-    "用中小学全学科一键备课技能，帮我核对这本六年级数学教材的《圆柱与圆锥》单元，出整章课时规划和打印版教案",
+    "用中小学全学科课件一键制作技能，帮我核对这本六年级数学教材的《圆柱与圆锥》单元，出整章课时规划和打印版教案",
     "按刚才定好的教案，做一套 11 页视觉不重复的希沃可编辑 PPT，并用 Three.js 代码引擎生成一段圆锥倒沙 3D 演示视频嵌进第 4 页",
     "帮我做一个断网能直接双击打开的教室大屏 3D 互动与 4 队抢答 PK 网页，再出一份 100 分随堂卷并批改课后测试文件夹里的答卷"
   ],

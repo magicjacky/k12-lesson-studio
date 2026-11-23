@@ -1,6 +1,6 @@
 ---
 name: k12-lesson-studio
-display_name: "中小学全学科一键备课"
+display_name: "中小学全学科课件一键制作"
 display_name_en: "K12 Lesson Studio — All-Subject Teaching Prep"
 version: "5.0.0"
 license: PolyForm-Noncommercial-1.0.0
@@ -8,11 +8,11 @@ author: "丰泽AI"
 category: education
 visibility: "public"
 homepage: https://github.com/magicjacky/k12-lesson-studio
-description: "中小学全学科一键备课（K12 Lesson Studio v5.0，全包体积 < 0.85 MB）。输入正版教材 PDF 或课题，一句话串联完成 5 步高准确度备课闭环：(1) 真教材 PDF 版本核验与原页节选及禁超纲红线清单；(2) 整章课时规划与带课堂高频卡壳救场表的打印版 Word 教案；(3) 视觉零重复希沃可编辑 11 页 PPT（4 槽位差异化无字大片 + 原生矢量蓝图 + 内置 Three.js 代码渲染 0 角标带声 3D 演示视频 + SHA-256 防重复与防重叠自动验真）；(4) 断网单文件 3D 大屏互动实验与全班 4 队光影柱 PK 网页；(5) Python 验算 100 分学生/教师 Word 试卷、批量阅卷诊断与 1 页错题急救小卡 + 3 级变式题。触发词：备课、写教案、做课件、授课PPT、3D演示视频、课堂互动HTML、出测试卷、批量改卷、错题急救卡、中小学全学科一键备课、k12-lesson-studio。"
+description: "中小学全学科课件一键制作（K12 Lesson Studio v5.0，全包体积 < 0.85 MB）。输入正版教材 PDF 或课题，一句话串联完成 5 步高准确度备课闭环：(1) 真教材 PDF 版本核验与原页节选及禁超纲红线清单；(2) 整章课时规划与带课堂高频卡壳救场表的打印版 Word 教案；(3) 视觉零重复希沃可编辑 11 页 PPT（4 槽位差异化无字大片 + 原生矢量蓝图 + 内置 Three.js 代码渲染 0 角标带声 3D 演示视频 + SHA-256 防重复与防重叠自动验真）；(4) 断网单文件 3D 大屏互动实验与全班 4 队光影柱 PK 网页；(5) Python 验算 100 分学生/教师 Word 试卷、批量阅卷诊断与 1 页错题急救小卡 + 3 级变式题。触发词：备课、写教案、做课件、授课PPT、3D演示视频、课堂互动HTML、出测试卷、批量改卷、错题急救卡、中小学全学科课件一键制作、k12-lesson-studio。"
 description_zh: "输入真教材 PDF，一句话跑通教案与课堂救场表、视觉零重复可改希沃 PPT、Three.js 3D 代码演示视频、断网大屏互动 PK 网页、防幻觉试卷与错题急救卡，中小学全学科通用"
 description_en: "Turn any K12 textbook PDF into verified lesson plans, zero-duplicate editable PPTX decks, deterministic Three.js 3D teaching videos, offline interactive 3D classroom PK HTML labs, verified exams, and remediation cards"
 examples_zh:
-  - "用中小学全学科一键备课技能，帮我核对这本六年级数学教材的《圆柱与圆锥》单元，出整章课时规划和打印版教案"
+  - "用中小学全学科课件一键制作技能，帮我核对这本六年级数学教材的《圆柱与圆锥》单元，出整章课时规划和打印版教案"
   - "按刚才定好的教案，做一套 11 页视觉不重复的希沃可编辑 PPT，并用 Three.js 代码引擎生成一段圆锥倒沙 3D 演示视频嵌进第 4 页"
   - "帮我做一个断网能直接双击打开的教室大屏 3D 互动与 4 队抢答 PK 网页，再出一份 100 分随堂卷并批改课后测试文件夹里的答卷"
 examples_en:
@@ -21,7 +21,7 @@ examples_en:
   - "Create an offline single-file 3D interactive classroom lab with 4-team PK mode, a verified 100-point test, and remediation cards"
 ---
 
-# 中小学全学科一键备课（K12 Lesson Studio v5.0 · 准确第一 × Three.js 代码视频 × 视觉零重复版）
+# 中小学全学科课件一键制作（K12 Lesson Studio v5.0 · 准确第一 × Three.js 代码视频 × 视觉零重复版）
 
 > **最高优先级铁律：第一优先永远是「内容、算式、几何、物理 100% 准确」；第二优先才是「视觉高级、丰富多样、绝不撞脸」。**
 > 本 Skill 已内置轻量级全栈工程底盘（全包总体积 < 0.85 MB，零 `npm` 安装依赖）：**环境自检器（`scripts/doctor.py`）**、**Three.js 确定性代码视频引擎（`assets/three.min.js` + `assets/video_stage.html` + `scripts/render_video.mjs`）**、**PPT 视觉零重复杂志与矢量图解库（`scripts/ppt_kit.py`）**、**全学科离线互动剧场引擎（`assets/theater_base.html` + `scripts/build_html.py`）** 与 **全套自动验收脚本**。严禁调用 AI 视频生成工具（`VideoGen`），所有教学演示视频一律用内置 Three.js 引擎代码渲染直出！

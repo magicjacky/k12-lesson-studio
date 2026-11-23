@@ -77,7 +77,7 @@ npx skills add https://github.com/magicjacky/k12-lesson-studio --skill k12-lesso
 ```
 
 - **Option 2 (Desktop AI Agent — WorkBuddy / Claude Code / Codex / Cursor)**: Ask your agent to install `magicjacky/k12-lesson-studio` into its global skills directory and run `python scripts/doctor.py setup --mirror` if any Python package is missing.
-- **Option 3 (WorkBuddy Skill Market)**: Search **`中小学全学科一键备课`** or **`k12-lesson-studio`** once listed.
+- **Option 3 (WorkBuddy Skill Market)**: Search **`中小学全学科课件一键制作`** or **`k12-lesson-studio`** once listed.
 
 ---
 
