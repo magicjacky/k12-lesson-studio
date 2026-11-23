@@ -2,7 +2,7 @@
 name: k12-lesson-studio
 display_name: "中小学全学科课件一键制作"
 display_name_en: "K12 Lesson Studio — All-Subject Teaching Prep"
-version: "5.0.0"
+version: "5.0.1"
 license: PolyForm-Noncommercial-1.0.0
 author: "丰泽AI"
 category: education
