@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>K12 Three.js Code Video Stage</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #08141a;
+    font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+  }
+  #wrap { position: relative; width: 1280px; height: 720px; overflow: hidden; background: #08141a; }
+  #gl, #hud { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; display: block; }
+  #hud { pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="gl" width="1280" height="720"></canvas>
+  <canvas id="hud" width="1280" height="720"></canvas>
+</div>
+<script src="three.min.js"></script>
+<script>
+(function () {
+  const ease = {
+    linear: t => t,
+    inQuad: t => t * t,
+    outQuad: t => 1 - (1 - t) * (1 - t),
+    inOutQuad: t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+    inCubic: t => t * t * t,
+    outCubic: t => 1 - Math.pow(1 - t, 3),
+    inOutCubic: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+    inOutQuint: t => t < 0.5 ? 16 * Math.pow(t, 5) : 1 - Math.pow(-2 * t + 2, 5) / 2,
+    outBack: t => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+    smoothstep: (a, b, x) => { const u = Math.max(0, Math.min(1, (x - a) / (b - a))); return u * u * (3 - 2 * u); }
+  };
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const remap = (v, a, b, c = 0, d = 1) => lerp(c, d, clamp((v - a) / (b - a), 0, 1));
+  function seededRng(seed = 20261122) {
+    let s = seed >>> 0;
+    return () => {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
+  }
+
+  function makeMarbleTexture(dark = true) {
+    const c = document.createElement('canvas');
+    c.width = 512; c.height = 512;
+    const g = c.getContext('2d');
+    const rng = seededRng(dark ? 918273 : 445566);
+    const grad = g.createLinearGradient(0, 0, 512, 512);
+    if (dark) {
+      grad.addColorStop(0, '#040c10');
+      grad.addColorStop(0.5, '#07151b');
+      grad.addColorStop(1, '#030a0d');
+    } else {
+      grad.addColorStop(0, '#f4efe4');
+      grad.addColorStop(0.5, '#ede5d6');
+      grad.addColorStop(1, '#e5dac7');
+    }
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 38; i++) {
+      g.beginPath();
+      let x = rng() * 512, y = rng() * 512;
+      g.moveTo(x, y);
+      for (let k = 0; k < 10; k++) {
+        x += (rng() - 0.35) * 90;
+        y += (rng() - 0.45) * 65;
+        g.lineTo(x, y);
+      }
+      g.strokeStyle = dark
+        ? (i % 4 === 0 ? 'rgba(218, 165, 62, 0.13)' : 'rgba(64, 152, 160, 0.10)')
+        : 'rgba(170, 152, 126, 0.14)';
+      g.lineWidth = 0.8 + rng() * 2.2;
+      g.stroke();
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(3, 2);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  function makeSandTexture() {
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 256;
+    const g = c.getContext('2d');
+    const rng = seededRng(773311);
+    g.fillStyle = '#b97e24';
+    g.fillRect(0, 0, 256, 256);
+    const palette = ['#e8b84b', '#d49a35', '#b87c1e', '#945f12', '#f3ce74', '#82500d'];
+    for (let i = 0; i < 16000; i++) {
+      g.fillStyle = palette[(rng() * palette.length) | 0];
+      const sz = 1 + (rng() > 0.78 ? 1 : 0);
+      g.fillRect((rng() * 256) | 0, (rng() * 256) | 0, sz, sz);
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(3, 3);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  function buildStudioEnv(renderer) {
+    const envScene = new THREE.Scene();
+    envScene.background = new THREE.Color(0x061218);
+    const panelGeo = new THREE.PlaneGeometry(12, 7);
+    const makePanel = (color, intensity, pos, look) => {
+      const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(intensity), side: THREE.DoubleSide });
+      const m = new THREE.Mesh(panelGeo, mat);
+      m.position.set(...pos);
+      m.lookAt(...look);
+      envScene.add(m);
+    };
+    makePanel(0xffecd0, 2.0, [-9, 9, 8], [0, 0, 0]);
+    makePanel(0x52bfd4, 1.3, [10, 6, 4], [0, 0, 0]);
+    makePanel(0xf5bd54, 1.8, [0, 8, -10], [0, 0, 0]);
+    makePanel(0x0a1e26, 0.5, [0, -7, 0], [0, 0, 0]);
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    pmrem.compileEquirectangularShader();
+    const rt = pmrem.fromScene(envScene, 0.04);
+    pmrem.dispose();
+    return rt.texture;
+  }
+
+  function makeBackdropTexture(theme = 'obsidian') {
+    const c = document.createElement('canvas');
+    c.width = 1280; c.height = 720;
+    const g = c.getContext('2d');
+    if (theme === 'linen') {
+      const gr = g.createRadialGradient(640, 260, 40, 640, 360, 780);
+      gr.addColorStop(0, '#fbf8f2');
+      gr.addColorStop(1, '#e8dfd0');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 1280, 720);
+    } else if (theme === 'laser') {
+      const gr = g.createRadialGradient(640, 280, 60, 640, 380, 760);
+      gr.addColorStop(0, '#10283f');
+      gr.addColorStop(0.55, '#091523');
+      gr.addColorStop(1, '#040911');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 1280, 720);
+    } else {
+      const gr = g.createRadialGradient(680, 290, 50, 640, 360, 780);
+      gr.addColorStop(0, '#153440');
+      gr.addColorStop(0.5, '#0b1d24');
+      gr.addColorStop(1, '#050d11');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 1280, 720);
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  function makeRoundRect(g, x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+
+  let registered = null;
+  let runtimeCtx = null;
+
+  window.VIDEO_STAGE = {
+    register(spec) {
+      registered = spec;
+    }
+  };
+
+  function initStage(overrideW, overrideH, overrideFps) {
+    if (!registered) throw new Error('No scene registered via VIDEO_STAGE.register(...)');
+    const W = overrideW || registered.width || 1280;
+    const H = overrideH || registered.height || 720;
+    const fps = overrideFps || registered.fps || 30;
+    const duration = registered.durationSec || 12;
+    const totalFrames = Math.max(1, Math.round(duration * fps));
+
+    const wrap = document.getElementById('wrap');
+    const glCanvas = document.getElementById('gl');
+    const hudCanvas = document.getElementById('hud');
+    wrap.style.width = W + 'px';
+    wrap.style.height = H + 'px';
+    glCanvas.width = W; glCanvas.height = H;
+    glCanvas.style.width = W + 'px'; glCanvas.style.height = H + 'px';
+    hudCanvas.width = W; hudCanvas.height = H;
+    hudCanvas.style.width = W + 'px'; hudCanvas.style.height = H + 'px';
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: glCanvas,
+      antialias: true,
+      alpha: false,
+      preserveDrawingBuffer: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.setSize(W, H, false);
+    renderer.setPixelRatio(1);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.02;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const scene = new THREE.Scene();
+    const envTex = buildStudioEnv(renderer);
+    scene.environment = envTex;
+    scene.background = makeBackdropTexture(registered.theme || 'obsidian');
+
+    const camera = new THREE.PerspectiveCamera(34, W / H, 0.1, 120);
+    camera.position.set(0, 3.8, 12.5);
+    camera.lookAt(0, 1.3, 0);
+
+    const hudCtx = hudCanvas.getContext('2d');
+
+    const helpers = {
+      setupStudioLights(opts = {}) {
+        const dark = (opts.theme || registered.theme || 'obsidian') !== 'linen';
+        const amb = new THREE.HemisphereLight(dark ? 0x6cb8c8 : 0xffffff, dark ? 0x071319 : 0xd8cbb8, dark ? 0.32 : 0.82);
+        scene.add(amb);
+
+        const key = new THREE.DirectionalLight(0xffe9c2, dark ? 1.55 : 1.5);
+        key.position.set(-5.0, 10.5, 7.5);
+        key.castShadow = true;
+        key.shadow.mapSize.set(1024, 1024);
+        key.shadow.camera.near = 1;
+        key.shadow.camera.far = 28;
+        key.shadow.camera.left = -9;
+        key.shadow.camera.right = 9;
+        key.shadow.camera.top = 7;
+        key.shadow.camera.bottom = -5;
+        key.shadow.bias = -0.0005;
+        key.shadow.radius = 2.5;
+        scene.add(key);
+
+        const rim = new THREE.DirectionalLight(0xffc966, dark ? 1.45 : 0.8);
+        rim.position.set(6.5, 6.0, -7.5);
+        scene.add(rim);
+
+        const fill = new THREE.PointLight(0x38bfd8, dark ? 0.85 : 0.35, 24, 1.6);
+        fill.position.set(4.5, 3.0, 6.2);
+        scene.add(fill);
+        return { amb, key, rim, fill };
+      },
+      makeMarbleTable(w = 18, d = 10, dark = true) {
+        const tex = makeMarbleTexture(dark);
+        const geo = new THREE.BoxGeometry(w, 0.36, d);
+        const mat = new THREE.MeshStandardMaterial({
+          map: tex,
+          roughness: dark ? 0.38 : 0.58,
+          metalness: dark ? 0.08 : 0.04,
+          envMapIntensity: dark ? 0.42 : 0.5
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = -0.18;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+        return mesh;
+      },
+      makeGlassMat(tint = 0x9de4f2, opacity = 0.18) {
+        return new THREE.MeshPhysicalMaterial({
+          color: tint,
+          transparent: true,
+          opacity,
+          roughness: 0.06,
+          metalness: 0.08,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.05,
+          reflectivity: 1.0,
+          envMapIntensity: 1.8,
+          depthWrite: false,
+          side: THREE.DoubleSide
+        });
+      },
+      makeRimGlassMat(tint = 0xcdf3ff, opacity = 0.42) {
+        return new THREE.MeshPhysicalMaterial({
+          color: tint,
+          transparent: true,
+          opacity,
+          roughness: 0.08,
+          metalness: 0.12,
+          clearcoat: 1.0,
+          envMapIntensity: 2.0
+        });
+      },
+      makeBrassMat() {
+        return new THREE.MeshStandardMaterial({
+          color: 0xd89e36,
+          emissive: 0x382104,
+          emissiveIntensity: 0.35,
+          metalness: 0.86,
+          roughness: 0.24,
+          envMapIntensity: 1.4
+        });
+      },
+      makeSandMat() {
+        const tex = makeSandTexture();
+        return new THREE.MeshStandardMaterial({
+          map: tex,
+          color: 0xf4c762,
+          roughness: 0.84,
+          metalness: 0.10,
+          envMapIntensity: 0.38
+        });
+      },
+      makeSandStreamMat() {
+        return new THREE.MeshStandardMaterial({
+          color: 0xe5ac3a,
+          emissive: 0x6b4108,
+          emissiveIntensity: 0.32,
+          roughness: 0.68,
+          metalness: 0.14,
+          transparent: true,
+          opacity: 0.94
+        });
+      },
+      createCrystalCylinder(opts = {}) {
+        const R = opts.radius ?? 0.86;
+        const H = opts.height ?? 2.58;
+        const ringFracs = opts.ringFractions || [1 / 3, 2 / 3, 1.0];
+        const glassMat = opts.glassMat || helpers.makeGlassMat();
+        const rimMat = opts.rimMat || helpers.makeRimGlassMat();
+        const fillMat = opts.fillMat || helpers.makeSandMat();
+
+        const group = new THREE.Group();
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.045, R + 0.055, 0.07, 64), rimMat);
+        base.position.y = 0.035;
+        base.receiveShadow = base.castShadow = true;
+        group.add(base);
+
+        const wall = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.04, R + 0.04, H, 64, 1, true), glassMat);
+        wall.position.y = H / 2;
+        wall.renderOrder = 4;
+        group.add(wall);
+
+        const lip = new THREE.Mesh(new THREE.TorusGeometry(R + 0.04, 0.026, 16, 64), rimMat);
+        lip.rotation.x = Math.PI / 2;
+        lip.position.y = H;
+        group.add(lip);
+
+        const ringMats = ringFracs.map(() => new THREE.MeshStandardMaterial({
+          color: 0xdca132, metalness: 0.85, roughness: 0.24,
+          emissive: 0x452703, emissiveIntensity: 0.45, envMapIntensity: 1.4
+        }));
+        ringFracs.forEach((frac, idx) => {
+          const rm = new THREE.Mesh(
+            new THREE.TorusGeometry(R + 0.052, frac >= 0.99 ? 0.022 : 0.028, 16, 64),
+            ringMats[idx]
+          );
+          rm.rotation.x = Math.PI / 2;
+          rm.position.y = H * frac;
+          group.add(rm);
+        });
+
+        const fillGeo = new THREE.CylinderGeometry(R - 0.012, R - 0.012, H - 0.05, 64, 1, false);
+        fillGeo.translate(0, (H - 0.05) / 2, 0);
+        const fillMesh = new THREE.Mesh(fillGeo, fillMat);
+        fillMesh.position.y = 0.04;
+        fillMesh.scale.y = 0.0001;
+        fillMesh.visible = false;
+        fillMesh.castShadow = fillMesh.receiveShadow = true;
+        group.add(fillMesh);
+
+        const moundGeo = new THREE.ConeGeometry(R * 0.72, 0.22, 48);
+        moundGeo.translate(0, 0.11, 0);
+        const mound = new THREE.Mesh(moundGeo, fillMat);
+        mound.visible = false;
+        group.add(mound);
+
+        return {
+          group, radius: R, height: H, ringMats,
+          setFill(frac, moundAmp = 0) {
+            const f = clamp(frac, 0, 1);
+            const topY = 0.04 + f * (H - 0.05);
+            if (f <= 0.002) {
+              fillMesh.visible = false;
+              mound.visible = false;
+            } else {
+              fillMesh.visible = true;
+              fillMesh.scale.y = f;
+              mound.visible = moundAmp > 0.04;
+              if (mound.visible) {
+                mound.position.set(0, topY - 0.02, 0);
+                mound.scale.set(0.85, Math.max(0.05, moundAmp), 0.85);
+              }
+            }
+            return topY;
+          },
+          setRingGlow(idx, flash = 0) {
+            const m = ringMats[idx];
+            if (!m) return;
+            if (flash > 0) {
+              m.emissive.setHex(0xf5c85c);
+              m.emissiveIntensity = 0.35 + flash;
+            } else {
+              m.emissive.setHex(0x452703);
+              m.emissiveIntensity = 0.42;
+            }
+          }
+        };
+      },
+      createCrystalConeVessel(opts = {}) {
+        const R = opts.radius ?? 0.86;
+        const H = opts.height ?? 2.58;
+        const x = opts.x ?? 0;
+        const z = opts.z ?? 0;
+        const glassMat = opts.glassMat || helpers.makeGlassMat();
+        const rimMat = opts.rimMat || helpers.makeRimGlassMat();
+        const standMat = helpers.makeGlassMat(0x88c7d4, 0.24);
+        const brassMat = opts.brassMat || helpers.makeBrassMat();
+        const fillMat = opts.fillMat || helpers.makeSandMat();
+
+        // Stationary sleek glass stand (stays on tabletop while rigid cone lifts & pours)
+        const standGroup = new THREE.Group();
+        standGroup.position.set(x, 0, z);
+        const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 0.05, 48), standMat);
+        foot.position.y = 0.025;
+        foot.receiveShadow = true;
+        standGroup.add(foot);
+        const collar = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.024, 14, 48), rimMat);
+        collar.rotation.x = Math.PI / 2;
+        collar.position.y = 0.56;
+        standGroup.add(collar);
+        for (let s = 0; s < 3; s++) {
+          const ang = (s * Math.PI * 2) / 3 + Math.PI / 6;
+          const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.56, 12), rimMat);
+          strut.position.set(Math.cos(ang) * 0.30, 0.29, Math.sin(ang) * 0.30);
+          strut.rotation.z = Math.cos(ang) * 0.12;
+          strut.rotation.x = -Math.sin(ang) * 0.12;
+          standGroup.add(strut);
+        }
+        const baseRing = new THREE.Mesh(new THREE.TorusGeometry(0.49, 0.012, 10, 48), brassMat);
+        baseRing.rotation.x = Math.PI / 2;
+        baseRing.position.y = 0.015;
+        standGroup.add(baseRing);
+
+        // Rigid open-top hollow crystal cone: apex at local (0,0,0), circular open mouth at local y=H
+        const moveGroup = new THREE.Group();
+        const homePos = new THREE.Vector3(x, 0.03, z);
+        moveGroup.position.copy(homePos);
+        const wallGeo = new THREE.CylinderGeometry(R + 0.035, 0.02, H, 64, 1, true);
+        wallGeo.translate(0, H / 2, 0);
+        const wall = new THREE.Mesh(wallGeo, glassMat);
+        wall.renderOrder = 3;
+        moveGroup.add(wall);
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(R + 0.035, 0.024, 16, 64), rimMat);
+        rim.rotation.x = Math.PI / 2;
+        rim.position.y = H;
+        moveGroup.add(rim);
+
+        // Internal filling (shrinks cleanly with cube-root volume conservation while glass stays 100% rigid!)
+        const innerGeo = new THREE.CylinderGeometry(R - 0.015, 0.01, H - 0.06, 48, 1, false);
+        innerGeo.translate(0, (H - 0.06) / 2, 0);
+        const innerFill = new THREE.Mesh(innerGeo, fillMat);
+        innerFill.position.y = 0.04;
+        innerFill.castShadow = true;
+        moveGroup.add(innerFill);
+
+        const zAxis = new THREE.Vector3(0, 0, 1);
+        const localLip = new THREE.Vector3(R * 0.92, H, 0);
+
+        return {
+          standGroup, moveGroup, homePos, radius: R, height: H,
+          setFill(remFrac) {
+            const f = clamp(remFrac, 0, 1);
+            if (f <= 0.004) {
+              innerFill.visible = false;
+            } else {
+              innerFill.visible = true;
+              const s = Math.cbrt(f);
+              innerFill.scale.set(s, s, s);
+            }
+          },
+          solvePourPose(targetSpoutVec3, tiltRad) {
+            const rotLip = localLip.clone().applyAxisAngle(zAxis, tiltRad);
+            const pivot = targetSpoutVec3.clone().sub(rotLip);
+            return { position: pivot, rotationZ: tiltRad, spoutWorld: targetSpoutVec3.clone() };
+          }
+        };
+      },
+      createPourStream(opts = {}) {
+        const count = opts.count ?? 220;
+        const coreMat = opts.coreMat || helpers.makeSandStreamMat();
+        const core = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.092, 1, 16), coreMat);
+        core.visible = false;
+
+        const pGeo = new THREE.DodecahedronGeometry(0.030, 0);
+        const pMat = new THREE.MeshStandardMaterial({
+          color: opts.color ?? 0xe8b240,
+          emissive: 0x6b4108,
+          emissiveIntensity: 0.28,
+          roughness: 0.55,
+          metalness: 0.22
+        });
+        const particles = new THREE.InstancedMesh(pGeo, pMat, count);
+        particles.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        particles.visible = false;
+
+        const rng = seededRng(opts.seed ?? 20260505);
+        const seeds = Array.from({ length: count }, () => ({
+          phase: rng(),
+          speed: 0.85 + rng() * 0.45,
+          sx: (rng() - 0.5) * 0.15,
+          sz: (rng() - 0.5) * 0.15,
+          sc: 0.55 + rng() * 0.90,
+          sp: rng() * Math.PI * 2
+        }));
+        const dummy = new THREE.Object3D();
+        const group = new THREE.Group();
+        group.add(core);
+        group.add(particles);
+
+        return {
+          group,
+          update(active, startVec, endVec, t, flowEnv = 1) {
+            if (!active || !startVec || !endVec) {
+              core.visible = false;
+              particles.visible = false;
+              return;
+            }
+            const dropH = Math.max(0.22, startVec.y - endVec.y);
+            const cs = 0.42 + 0.65 * Math.pow(clamp(flowEnv, 0, 1), 0.4);
+            core.visible = true;
+            core.position.set((startVec.x + endVec.x) * 0.5, (startVec.y + endVec.y) * 0.5, 0);
+            core.scale.set(cs, dropH, cs);
+            core.rotation.z = Math.atan2(endVec.x - startVec.x, dropH) * 0.6;
+
+            particles.visible = true;
+            for (let i = 0; i < seeds.length; i++) {
+              const ps = seeds[i];
+              const age = (ps.phase + t * 2.4 * ps.speed) % 1.0;
+              dummy.position.set(
+                lerp(startVec.x, endVec.x, age) + ps.sx * (0.35 + age * 1.1),
+                lerp(startVec.y, endVec.y, age * age * 0.65 + age * 0.35),
+                lerp(startVec.z, endVec.z, age) + ps.sz * (0.35 + age * 1.1)
+              );
+              dummy.rotation.set(ps.sp + t * 5, ps.sp + t * 7, 0);
+              const sc = ps.sc * (0.5 + 0.58 * flowEnv) * (1 - age * 0.25);
+              dummy.scale.set(sc, sc, sc);
+              dummy.updateMatrix();
+              particles.setMatrixAt(i, dummy.matrix);
+            }
+            particles.instanceMatrix.needsUpdate = true;
+          }
+        };
+      },
+      makeSandTexture,
+      makeMarbleTexture,
+      project(vec3) {
+        const v = vec3.clone().project(camera);
+        return {
+          x: (v.x * 0.5 + 0.5) * W,
+          y: (-v.y * 0.5 + 0.5) * H,
+          visible: v.z < 1
+        };
+      },
+      roundRect: makeRoundRect,
+      hud: {
+        clear() { hudCtx.clearRect(0, 0, W, H); },
+        drawHeader(eyebrow, title, rightPill) {
+          const g = hudCtx;
+          // Top subtle vignette
+          const topGrad = g.createLinearGradient(0, 0, 0, 125);
+          topGrad.addColorStop(0, 'rgba(5, 13, 17, 0.76)');
+          topGrad.addColorStop(1, 'rgba(5, 13, 17, 0)');
+          g.fillStyle = topGrad;
+          g.fillRect(0, 0, W, 125);
+
+          g.save();
+          g.font = '600 15px "Microsoft YaHei", sans-serif';
+          g.fillStyle = '#e5be6a';
+          g.fillText(eyebrow, 42, 42);
+
+          g.font = '700 32px "Microsoft YaHei", sans-serif';
+          g.fillStyle = '#f8f4ea';
+          g.fillText(title, 42, 82);
+
+          if (rightPill) {
+            g.font = '600 15px "Microsoft YaHei", sans-serif';
+            const tw = g.measureText(rightPill).width;
+            const pw = tw + 30;
+            const px = W - 42 - pw;
+            makeRoundRect(g, px, 26, pw, 36, 18);
+            g.fillStyle = 'rgba(17, 42, 52, 0.82)';
+            g.fill();
+            g.strokeStyle = 'rgba(229, 190, 106, 0.72)';
+            g.lineWidth = 1.4;
+            g.stroke();
+            g.fillStyle = '#f5dc99';
+            g.fillText(rightPill, px + 15, 49);
+          }
+          g.restore();
+        },
+        drawSubtitle(stepBadge, text, progress, markers = []) {
+          const g = hudCtx;
+          const botGrad = g.createLinearGradient(0, H - 140, 0, H);
+          botGrad.addColorStop(0, 'rgba(5, 13, 17, 0)');
+          botGrad.addColorStop(1, 'rgba(5, 13, 17, 0.88)');
+          g.fillStyle = botGrad;
+          g.fillRect(0, H - 140, W, 140);
+
+          g.save();
+          // Pill subtitle centered above timeline
+          const barY = H - 30;
+          if (text) {
+            g.font = '600 22px "Microsoft YaHei", sans-serif';
+            const mainW = g.measureText(text).width;
+            g.font = '700 15px "Microsoft YaHei", sans-serif';
+            const badgeW = stepBadge ? g.measureText(stepBadge).width + 24 : 0;
+            const totalW = mainW + badgeW + (stepBadge ? 44 : 40);
+            const sx = (W - totalW) / 2;
+            const sy = H - 96;
+            makeRoundRect(g, sx, sy, totalW, 48, 24);
+            g.fillStyle = 'rgba(10, 25, 32, 0.86)';
+            g.fill();
+            g.strokeStyle = 'rgba(229, 190, 106, 0.45)';
+            g.lineWidth = 1.2;
+            g.stroke();
+
+            let cx = sx + 14;
+            if (stepBadge) {
+              makeRoundRect(g, cx, sy + 9, badgeW, 30, 15);
+              g.fillStyle = '#e5be6a';
+              g.fill();
+              g.fillStyle = '#09161c';
+              g.font = '700 14px "Microsoft YaHei", sans-serif';
+              g.fillText(stepBadge, cx + 12, sy + 29);
+              cx += badgeW + 14;
+            } else {
+              cx += 6;
+            }
+            g.font = '600 21px "Microsoft YaHei", sans-serif';
+            g.fillStyle = '#f8f4ea';
+            g.fillText(text, cx, sy + 32);
+          }
+
+          // Progress track
+          const tx = 48, tw = W - 96, th = 5;
+          makeRoundRect(g, tx, barY, tw, th, 2.5);
+          g.fillStyle = 'rgba(255, 255, 255, 0.16)';
+          g.fill();
+          makeRoundRect(g, tx, barY, Math.max(4, tw * clamp(progress, 0, 1)), th, 2.5);
+          const pGrad = g.createLinearGradient(tx, 0, tx + tw, 0);
+          pGrad.addColorStop(0, '#38bdf8');
+          pGrad.addColorStop(0.5, '#e5be6a');
+          pGrad.addColorStop(1, '#f59e0b');
+          g.fillStyle = pGrad;
+          g.fill();
+
+          for (const mk of markers) {
+            const mx = tx + tw * mk.p;
+            const reached = progress >= mk.p - 0.005;
+            g.beginPath();
+            g.arc(mx, barY + th / 2, reached ? 5.5 : 4, 0, Math.PI * 2);
+            g.fillStyle = reached ? '#f5dc99' : 'rgba(255,255,255,0.35)';
+            g.fill();
+            g.font = '600 12px "Microsoft YaHei", sans-serif';
+            g.fillStyle = reached ? '#f5dc99' : 'rgba(220,232,236,0.55)';
+            const lw = g.measureText(mk.label).width;
+            g.fillText(mk.label, mx - lw / 2, barY - 8);
+          }
+          g.restore();
+        },
+        drawCallout(x, y, label, color = '#f5dc99', align = 'left') {
+          const g = hudCtx;
+          g.save();
+          g.font = '700 16px "Georgia", "Microsoft YaHei", sans-serif';
+          const tw = g.measureText(label).width;
+          const bw = tw + 20, bh = 28;
+          const bx = align === 'right' ? x - bw : (align === 'center' ? x - bw / 2 : x);
+          const by = y - bh / 2;
+          makeRoundRect(g, bx, by, bw, bh, 6);
+          g.fillStyle = 'rgba(8, 22, 28, 0.86)';
+          g.fill();
+          g.strokeStyle = color;
+          g.lineWidth = 1.4;
+          g.stroke();
+          g.fillStyle = color;
+          g.fillText(label, bx + 10, by + 19);
+          g.restore();
+        },
+        drawMetricCard(x, y, w, h, title, mainVal, rightTag, fill01, segments = 3) {
+          const g = hudCtx;
+          g.save();
+          makeRoundRect(g, x, y, w, h, 14);
+          g.fillStyle = 'rgba(7, 20, 27, 0.88)';
+          g.fill();
+          g.strokeStyle = fill01 >= 0.99 ? 'rgba(245, 220, 153, 0.95)' : 'rgba(229, 190, 106, 0.48)';
+          g.lineWidth = fill01 >= 0.99 ? 2.0 : 1.2;
+          g.stroke();
+
+          g.font = '600 13px "Microsoft YaHei", sans-serif';
+          g.fillStyle = '#9fb4bc';
+          g.fillText(title, x + 16, y + 25);
+
+          g.font = '700 26px "Georgia", "Microsoft YaHei", sans-serif';
+          g.fillStyle = '#f5dc99';
+          g.fillText(mainVal, x + 16, y + 62);
+
+          if (rightTag) {
+            g.font = '700 18px "Georgia", "Microsoft YaHei", sans-serif';
+            g.fillStyle = '#38bdf8';
+            const rw = g.measureText(rightTag).width;
+            g.fillText(rightTag, x + w - 16 - rw, y + 60);
+          }
+
+          if (segments > 0) {
+            const gap = 6;
+            const segW = (w - 32 - gap * (segments - 1)) / segments;
+            const sy = y + h - 26;
+            for (let s = 0; s < segments; s++) {
+              const sx = x + 16 + s * (segW + gap);
+              const sf = clamp((fill01 - s / segments) * segments, 0, 1);
+              makeRoundRect(g, sx, sy, segW, 11, 5.5);
+              g.fillStyle = 'rgba(255,255,255,0.10)';
+              g.fill();
+              if (sf > 0.01) {
+                makeRoundRect(g, sx, sy, Math.max(6, segW * sf), 11, 5.5);
+                g.fillStyle = (s === segments - 1 && sf > 0.98) ? '#f59e0b' : '#e5be6a';
+                g.fill();
+              }
+            }
+          }
+          g.restore();
+        },
+        drawFormulaBanner(x, y, w, h, mainText, subText, alpha = 1) {
+          const g = hudCtx;
+          g.save();
+          g.globalAlpha = clamp(alpha, 0, 1);
+          makeRoundRect(g, x, y, w, h, 16);
+          g.fillStyle = 'rgba(7, 21, 28, 0.93)';
+          g.fill();
+          g.strokeStyle = '#e5be6a';
+          g.lineWidth = 2.0;
+          g.stroke();
+
+          g.font = '700 30px "Georgia", "Microsoft YaHei", sans-serif';
+          g.fillStyle = '#f8f4ea';
+          const fw = g.measureText(mainText).width;
+          g.fillText(mainText, x + (w - fw) / 2, y + 48);
+
+          if (subText) {
+            g.font = '600 14.5px "Microsoft YaHei", sans-serif';
+            g.fillStyle = '#e5be6a';
+            const sw = g.measureText(subText).width;
+            g.fillText(subText, x + (w - sw) / 2, y + 78);
+          }
+          g.restore();
+        }
+      }
+    };
+
+    runtimeCtx = {
+      THREE,
+      W,
+      H,
+      fps,
+      duration,
+      totalFrames,
+      renderer,
+      scene,
+      camera,
+      hudCtx,
+      ease,
+      clamp,
+      lerp,
+      remap,
+      seededRng,
+      helpers,
+      state: {}
+    };
+
+    if (typeof registered.setup === 'function') {
+      registered.setup(runtimeCtx);
+    }
+
+    return {
+      width: W,
+      height: H,
+      fps,
+      duration,
+      totalFrames,
+      audioCues: registered.audioCues || []
+    };
+  }
+
+  window.__initVideoStage = initStage;
+  window.__renderVideoFrame = function (frame) {
+    const ctx = runtimeCtx;
+    const t = frame / ctx.fps;
+    const progress = ctx.totalFrames > 1 ? frame / (ctx.totalFrames - 1) : 1;
+    ctx.helpers.hud.clear();
+    registered.renderFrame(ctx, frame, t, ctx.duration, progress);
+    ctx.renderer.render(ctx.scene, ctx.camera);
+    return true;
+  };
+})();
+</script>
+<!-- SCENE_SCRIPT_SLOT -->
+</body>
+</html>

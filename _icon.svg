@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="k12Bg" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0b1a20"/>
+      <stop offset="55%" stop-color="#155e68"/>
+      <stop offset="100%" stop-color="#0f2b34"/>
+    </linearGradient>
+    <linearGradient id="k12Gold" x1="18" y1="14" x2="48" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f7e2b8"/>
+      <stop offset="55%" stop-color="#e2b45a"/>
+      <stop offset="100%" stop-color="#c69749"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#k12Bg)"/>
+  <rect x="6.5" y="6.5" width="51" height="51" rx="14" stroke="#e2b45a" stroke-opacity="0.45" stroke-width="1.2"/>
+  <path d="M25 16L13 46H37L25 16Z" fill="url(#k12Gold)" fill-opacity="0.92"/>
+  <rect x="35" y="23" width="15" height="23" rx="3.5" fill="#f7f4ec" fill-opacity="0.16" stroke="#f7e2b8" stroke-width="1.8"/>
+  <line x1="35.8" y1="31" x2="49.2" y2="31" stroke="#e2b45a" stroke-width="1.6"/>
+  <line x1="35.8" y1="38.5" x2="49.2" y2="38.5" stroke="#e2b45a" stroke-width="1.6"/>
+  <path d="M47 11L48.4 14.8L52.2 16.2L48.4 17.6L47 21.4L45.6 17.6L41.8 16.2L45.6 14.8L47 11Z" fill="#fde047"/>
+</svg>
