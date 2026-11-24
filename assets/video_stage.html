@@ -144,6 +144,20 @@
       gr.addColorStop(1, '#040911');
       g.fillStyle = gr;
       g.fillRect(0, 0, 1280, 720);
+    } else if (theme === 'ink') {
+      const gr = g.createRadialGradient(640, 260, 50, 640, 360, 780);
+      gr.addColorStop(0, '#1c3532');
+      gr.addColorStop(0.55, '#112220');
+      gr.addColorStop(1, '#081211');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 1280, 720);
+    } else if (theme === 'emerald') {
+      const gr = g.createRadialGradient(640, 280, 55, 640, 370, 770);
+      gr.addColorStop(0, '#12382e');
+      gr.addColorStop(0.55, '#0a1f1a');
+      gr.addColorStop(1, '#040d0b');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 1280, 720);
     } else {
       const gr = g.createRadialGradient(680, 290, 50, 640, 360, 780);
       gr.addColorStop(0, '#153440');
@@ -553,6 +567,227 @@
       },
       makeSandTexture,
       makeMarbleTexture,
+      createLaserBeam(opts = {}) {
+        const maxSegments = opts.maxSegments ?? 8;
+        const color = opts.color ?? 0x38bdf8;
+        const radius = opts.radius ?? 0.032;
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const glowMat = new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: opts.glowOpacity ?? 0.42,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+        const group = new THREE.Group();
+        const segs = [];
+        for (let i = 0; i < maxSegments; i++) {
+          const core = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.45, radius * 0.45, 1, 14), coreMat);
+          const glow = new THREE.Mesh(new THREE.CylinderGeometry(radius * 1.65, radius * 1.65, 1, 16), glowMat);
+          const wrap = new THREE.Group();
+          wrap.add(core);
+          wrap.add(glow);
+          wrap.visible = false;
+          group.add(wrap);
+          segs.push({ wrap, core, glow });
+        }
+        const up = new THREE.Vector3(0, 1, 0);
+        const setPoints = (pts) => {
+          for (let i = 0; i < segs.length; i++) {
+            if (!pts || i >= pts.length - 1) {
+              segs[i].wrap.visible = false;
+              continue;
+            }
+            const a = pts[i], b = pts[i + 1];
+            const dir = new THREE.Vector3().subVectors(b, a);
+            const len = dir.length();
+            if (len < 1e-4) {
+              segs[i].wrap.visible = false;
+              continue;
+            }
+            segs[i].wrap.visible = true;
+            segs[i].wrap.position.copy(a).addScaledVector(dir, 0.5);
+            segs[i].wrap.quaternion.setFromUnitVectors(up, dir.clone().normalize());
+            segs[i].core.scale.set(1, len, 1);
+            segs[i].glow.scale.set(1, len, 1);
+          }
+        };
+        if (opts.points) setPoints(opts.points);
+        return { group, setPoints, coreMat, glowMat };
+      },
+      createOpticalElement(opts = {}) {
+        const kind = (opts.kind || 'convex').toLowerCase();
+        const H = opts.height ?? 2.4;
+        const W = opts.width ?? 0.46;
+        const D = opts.depth ?? 1.5;
+        const mat = opts.material || helpers.makeGlassMat(0x9ee8ff, 0.28);
+        const rimMat = helpers.makeRimGlassMat(0xdbf8ff, 0.52);
+        const group = new THREE.Group();
+        if (kind === 'prism') {
+          const m = new THREE.Mesh(new THREE.CylinderGeometry(W * 1.8, W * 1.8, D, 3), mat);
+          m.rotation.x = Math.PI / 2;
+          group.add(m);
+        } else if (kind === 'mirror') {
+          const mirrorMat = new THREE.MeshStandardMaterial({ color: 0xe6f4f8, metalness: 0.96, roughness: 0.05 });
+          const m = new THREE.Mesh(new THREE.BoxGeometry(0.12, H, D), mirrorMat);
+          group.add(m);
+        } else {
+          const m = new THREE.Mesh(new THREE.SphereGeometry(H * 0.5, 48, 32), mat);
+          m.scale.set(kind === 'concave' ? (W / H) * 0.55 : W / H, 1, D / H);
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(H * 0.5, 0.025, 14, 48), rimMat);
+          ring.scale.set(0.18, 1, D / H);
+          group.add(m);
+          group.add(ring);
+        }
+        group.position.set(opts.x ?? 0, opts.y ?? H * 0.5, opts.z ?? 0);
+        return { group };
+      },
+      createMolecule(opts = {}) {
+        const atomsSpec = opts.atoms || [];
+        const bondsSpec = opts.bonds || [];
+        const group = new THREE.Group();
+        const up = new THREE.Vector3(0, 1, 0);
+        const atomMeshes = atomsSpec.map((a) => {
+          const mat = new THREE.MeshStandardMaterial({
+            color: a.color ?? 0x38bdf8,
+            roughness: 0.25,
+            metalness: 0.18,
+            emissive: a.emissive ?? 0x051520,
+            emissiveIntensity: 0.25
+          });
+          const m = new THREE.Mesh(new THREE.SphereGeometry(a.radius ?? 0.34, 36, 24), mat);
+          m.position.set(a.x ?? 0, a.y ?? 0, a.z ?? 0);
+          m.castShadow = m.receiveShadow = true;
+          group.add(m);
+          return m;
+        });
+        const bondObjs = bondsSpec.map((b) => {
+          const mat = new THREE.MeshStandardMaterial({
+            color: b.color ?? 0xd6e4ec,
+            roughness: 0.35,
+            metalness: 0.45,
+            transparent: true,
+            opacity: b.opacity ?? 1.0
+          });
+          const m = new THREE.Mesh(new THREE.CylinderGeometry(b.radius ?? 0.065, b.radius ?? 0.065, 1, 16), mat);
+          group.add(m);
+          return { mesh: m, mat, i: b[0] ?? b.from, j: b[1] ?? b.to };
+        });
+        const syncBonds = () => {
+          for (const bd of bondObjs) {
+            const pa = atomMeshes[bd.i]?.position, pb = atomMeshes[bd.j]?.position;
+            if (!pa || !pb) continue;
+            const dir = new THREE.Vector3().subVectors(pb, pa);
+            const len = Math.max(0.001, dir.length());
+            bd.mesh.position.copy(pa).addScaledVector(dir, 0.5);
+            bd.mesh.quaternion.setFromUnitVectors(up, dir.clone().normalize());
+            bd.mesh.scale.set(1, len, 1);
+          }
+        };
+        syncBonds();
+        return {
+          group,
+          atoms: atomMeshes,
+          bonds: bondObjs,
+          setAtomPos(idx, vec3) {
+            if (atomMeshes[idx]) {
+              atomMeshes[idx].position.copy(vec3);
+              syncBonds();
+            }
+          },
+          setBondOpacity(idx, alpha) {
+            if (bondObjs[idx]) {
+              bondObjs[idx].mat.opacity = clamp(alpha, 0, 1);
+              bondObjs[idx].mesh.visible = alpha > 0.01;
+            }
+          }
+        };
+      },
+      createFlowPath(opts = {}) {
+        const rawPts = (opts.points || [[-3, 1, 0], [0, 2.2, 0], [3, 1, 0]]).map(
+          p => (p.isVector3 ? p : new THREE.Vector3(p[0], p[1], p[2]))
+        );
+        const curve = new THREE.CatmullRomCurve3(rawPts, !!opts.closed);
+        const group = new THREE.Group();
+        const tubeGeo = new THREE.TubeGeometry(curve, 72, opts.tubeRadius ?? 0.14, 20, !!opts.closed);
+        const tubeMat = helpers.makeGlassMat(opts.tubeColor ?? 0x7dd3fc, opts.tubeOpacity ?? 0.22);
+        const tube = new THREE.Mesh(tubeGeo, tubeMat);
+        group.add(tube);
+
+        const count = opts.particleCount ?? 90;
+        const pGeo = new THREE.SphereGeometry(opts.particleSize ?? 0.055, 12, 10);
+        const pMat = new THREE.MeshStandardMaterial({
+          color: opts.particleColor ?? 0xf59e0b,
+          emissive: opts.particleColor ?? 0xf59e0b,
+          emissiveIntensity: 0.55,
+          roughness: 0.3
+        });
+        const inst = new THREE.InstancedMesh(pGeo, pMat, count);
+        inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        group.add(inst);
+
+        const rng = seededRng(opts.seed ?? 20261124);
+        const offsets = Array.from({ length: count }, (_, idx) => ({
+          u0: idx / count,
+          jx: (rng() - 0.5) * (opts.tubeRadius ?? 0.14) * 0.7,
+          jy: (rng() - 0.5) * (opts.tubeRadius ?? 0.14) * 0.7,
+          sc: 0.72 + rng() * 0.55
+        }));
+        const dummy = new THREE.Object3D();
+        return {
+          group,
+          curve,
+          pMat,
+          update(t, speed = 0.22, activeFrac = 1.0) {
+            const lim = clamp(activeFrac, 0, 1);
+            for (let i = 0; i < count; i++) {
+              const o = offsets[i];
+              const u = (o.u0 + t * speed) % 1.0;
+              if (u > lim) {
+                dummy.scale.set(0.0001, 0.0001, 0.0001);
+              } else {
+                const pt = curve.getPointAt(u);
+                dummy.position.set(pt.x + o.jx, pt.y + o.jy, pt.z);
+                dummy.scale.set(o.sc, o.sc, o.sc);
+              }
+              dummy.updateMatrix();
+              inst.setMatrixAt(i, dummy.matrix);
+            }
+            inst.instanceMatrix.needsUpdate = true;
+          }
+        };
+      },
+      create3DArrow(opts = {}) {
+        const color = opts.color ?? 0xf59e0b;
+        const r = opts.shaftRadius ?? 0.032;
+        const headL = opts.headLength ?? 0.24;
+        const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.25, roughness: 0.3, metalness: 0.4 });
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 14), mat);
+        const head = new THREE.Mesh(new THREE.ConeGeometry(r * 2.8, headL, 18), mat);
+        const group = new THREE.Group();
+        group.add(shaft);
+        group.add(head);
+        const up = new THREE.Vector3(0, 1, 0);
+        const setEndpoints = (fromVec, toVec) => {
+          const dir = new THREE.Vector3().subVectors(toVec, fromVec);
+          const total = dir.length();
+          if (total < 1e-3) {
+            group.visible = false;
+            return;
+          }
+          group.visible = true;
+          const n = dir.clone().normalize();
+          const sLen = Math.max(0.02, total - headL);
+          const q = new THREE.Quaternion().setFromUnitVectors(up, n);
+          shaft.position.copy(fromVec).addScaledVector(n, sLen * 0.5);
+          shaft.quaternion.copy(q);
+          shaft.scale.set(1, sLen, 1);
+          head.position.copy(fromVec).addScaledVector(n, sLen + headL * 0.5);
+          head.quaternion.copy(q);
+        };
+        if (opts.from && opts.to) setEndpoints(opts.from, opts.to);
+        return { group, setEndpoints, mat };
+      },
       project(vec3) {
         const v = vec3.clone().project(camera);
         return {

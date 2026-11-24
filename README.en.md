@@ -4,15 +4,15 @@
 
 <h1>K12 Lesson Studio · All-Subject Teaching Prep Skill</h1>
 
-**An accuracy-first, engineering-grade AI Agent Skill for K12 lesson prep (< 0.85 MB total · Zero npm dependencies).**
+**An accuracy-first, unified-CLI AI Agent Skill for all-subject K12 lesson prep (< 0.90 MB total · Zero npm dependencies).**
 
-Turn any textbook PDF or lesson topic into a verified 5-step classroom kit: textbook scope & anti-hallucination checklist · printable DOCX lesson plans with classroom rescue scripts · zero-duplicate editable 11-slide PPTX decks · deterministic Three.js code-rendered 3D videos (zero AI watermarks) · single-file offline 3D interactive HTML labs with 4-team classroom PK · Python-verified exams & remediation cards.
+Turn any textbook PDF (electronic or scanned) or lesson topic into a verified 5-step classroom kit via `k12_studio.py`: textbook scope & anti-hallucination checklist · printable DOCX lesson plans with classroom rescue scripts · zero-duplicate all-subject editable 11-slide PPTX decks · deterministic Three.js code-rendered 3D videos (zero AI watermarks) · single-file offline 3D interactive HTML labs with 4-team classroom PK · single-source verified student/red-ink teacher exams & remediation cards.
 
 [![GitHub stars](https://img.shields.io/github/stars/magicjacky/k12-lesson-studio?style=flat-square&color=E2B45A&logo=github)](https://github.com/magicjacky/k12-lesson-studio/stargazers)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-Native%20ZH-155E68?style=flat-square)](#installation)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Skill-D97757?style=flat-square)](#installation)
 [![Codex](https://img.shields.io/badge/Codex-Skill-111111?style=flat-square)](#installation)
-[![Size](https://img.shields.io/badge/Skill%20Size-%3C%200.85%20MB-C69749?style=flat-square)](#repository-layout)
+[![Size](https://img.shields.io/badge/Skill%20Size-%3C%200.90%20MB-C69749?style=flat-square)](#repository-layout)
 [![License](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-0D7A55?style=flat-square)](LICENSE)
 
 [简体中文](./README.md) · **English**
@@ -102,10 +102,12 @@ Automatically adapts themes, visual worlds, Three.js scenes, and curriculum guar
 ## CLI & Automated Audits
 
 ```bash
-python scripts/doctor.py doctor
-node scripts/render_video.mjs --scene .build/video_scene.js --out demo.mp4 --poster poster.png --contact-sheet sheet.png
-python scripts/audit_pptx.py deck.pptx --render-sheet ppt_sheet.png
-node scripts/audit_html.mjs lab.html .build/audit_shots
+python k12_studio.py doctor
+python k12_studio.py package-audit
+python k12_studio.py render-video --scene .build/scene.js --out demo.mp4 --compact-out compact.mp4 --poster poster.png --contact-sheet sheet.png
+python k12_studio.py audit-pptx deck.pptx --render-sheet ppt_sheet.png
+python k12_studio.py audit-html lab.html --shots-dir .build/audit_shots
+python k12_studio.py verify-exam .build/exam_spec.json --export-student-md .build/student.md --export-teacher-md .build/teacher.md
 ```
 
 ---
@@ -114,8 +116,8 @@ node scripts/audit_html.mjs lab.html .build/audit_shots
 
 ```text
 k12-lesson-studio/
-├─ SKILL.md · workbuddy.json · _icon.svg · LICENSE · requirements.txt
-├─ assets/        (three.min.js, video_stage.html, theater_base.html)
+├─ k12_studio.py · SKILL.md · workbuddy.json · _icon.svg · LICENSE · requirements.txt
+├─ assets/        (three.min.js, video_stage.html, theater_base.html, theater_config.schema.json, exam_spec.schema.json)
 ├─ scripts/       (doctor.py, extract_textbook.py, md_to_docx.py, render_video.mjs, ppt_kit.py, audit_pptx.py, build_html.py, audit_html.mjs, verify_exam.py)
 ├─ references/    (media-prompt-engineering.md, themes.md, subject-playbooks.md, interactive-html-blueprint.md, lesson-and-exam-templates.md)
 └─ docs/images/   (GitHub README showcase WebP screenshots — excluded from WorkBuddy Open Platform 2-level ZIP)

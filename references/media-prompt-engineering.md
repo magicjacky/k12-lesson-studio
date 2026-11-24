@@ -1,87 +1,65 @@
-# 多媒体视觉多样化（`ImageGen`）与 Three.js 代码驱动教学视频（`render_video.mjs`）工程规范（v5.0）
+# 多媒体视觉多样化（`ImageGen`）与 Three.js 全学科代码视频（`render_video.mjs`）规范（v5.1）
 
 > 核心理念：
-> 1. **教学动态演示视频严禁使用 AI 文生/图生视频工具（如 `VideoGen`）！** 一律使用本 Skill 内置的 **Three.js 确定性代码视频引擎（`assets/three.min.js` + `assets/video_stage.html` + `scripts/render_video.mjs`）** 逐帧渲染生成 1280×720 30fps 带拟声音频的高清 MP4——100% 严守数学/物理公式与刻度守恒、零 AI 穿帮变形、零「AI生成」角标、本机 30 秒直出、Skill 总体积轻巧（< 1 MB，无需 Remotion 巨型依赖）。
-> 2. **PPT 配图严禁重复、严禁同质化棚拍堆砌！** 整套 11 页课件最多生成 **3–4 张题材、景别、光影情绪完全不同** 的 `ImageGen` 无字视觉图；其余页面必须使用 `ppt_kit.py` 原生矢量工程图解、代码视频与瑞士排版，确保零撞脸、零复用（`audit_pptx.py` 硬性拦截重复图片）。
+> 1. **教学动态演示视频严禁使用 AI 视频工具（如 `VideoGen`）！** 一律使用本技能内置的 **Three.js 确定性代码视频引擎（`assets/three.min.js` + `assets/video_stage.html` + `scripts/render_video.mjs`）** 逐帧渲染 1280×720 30fps 带拟声音频的高清 MP4——100% 严守数学/物理/化学守恒、零 AI 穿帮变形、零角标、30 秒本机直出。
+> 2. **PPT 配图严禁重复、严禁同质化棚拍堆砌！** 整套 11 页课件最多生成 **3–4 张题材、景别、光影完全不同** 的 `ImageGen` 无字主视觉（经 `add_picture_cover()` 自动居中裁切零拉伸）；其余页面一律使用 `scripts/ppt_kit.py` 全学科原生矢量图解与瑞士排版（`scripts/audit_pptx.py` 硬性拦截 SHA-256 重复图片）。
 
 ---
 
-## 一、PPT 配图「视觉防重复矩阵」与 `ImageGen` 6 段提示词公式
+## 一、PPT 配图「4 槽位视觉防重复矩阵」与 `ImageGen` 6 段提示词公式
 
-**绝对红线**：
-- **0 复用**：同一张图片绝不允许出现在 2 页及以上（例如绝不允许把第 2 页的沙堆图直接缩小贴到第 7 页例题里！第 7 页应改用 `ppt_kit.py` 的原生矢量标注蓝图 `add_cone_blueprint_card()`）。
-- **0 同质化**：严禁连续多页都画“深色大理石桌上摆玻璃杯”。全套最多生成 **4 张 `ImageGen` 图**，必须分属 **4 种截然不同的视觉世界**：
-
-| 槽位 | 所在页 | 视觉世界与光影情绪（彼此必须显著区分！） | 严禁雷同点 |
+| 槽位 | 所在页 | 视觉世界与光影情绪（彼此必须显著区分） | 严禁雷同点 |
 |---|---|---|---|
-| **主图 1 · 电影封面** | P01 | 深海曜石暗调雕塑棚拍（主体严锁右 48%，左 48% 净黑留白） | 仅 P01 使用暗调静物大片 |
-| **主图 2 · 真实生活现场** | P02 | 明亮自然日光纪实/微缩户外实景（如阳光下的金黄粮仓/工地沙堆、生活真实器物） | 必须明亮自然光，严禁暗黑棚拍 |
-| **主图 3 · 反例冲突对比** | P06 | 明亮暖象牙白/浅灰建筑博物馆顶光微距，改用**哑光陶土/磨砂彩釉/彩色亚克力几何教具**形成高反差对比（底明显不等或高明显不等） | 严禁再用深绿大理石+透明玻璃杯！必须换材质与明亮色温 |
-| **主图 4 · 课堂剧场/应用收官** | P11 | 等轴测全息光学/未来课堂交互沙盘或真实建筑地标摄影（如圆锥形天文台穹顶、建筑结构） | 严禁重复 P01 静物构图 |
+| **主图 1 · 电影封面** | P01 | 深色焦点棚拍或宋画/暗室光学雕塑封面（主体严锁右 48%，左 48% 干净留白） | 仅 P01 使用暗调封面静物 |
+| **主图 2 · 真实生活现场** | P02 | 明亮自然日光纪实/户外实景（粮仓沙堆、彩虹桥梁、植物生态、历史遗迹、生活场景） | 必须明亮自然光，严禁暗黑棚拍 |
+| **主图 3 · 反例/冲突对比** | P06 | 明亮暖象牙白/浅灰博物馆顶光微距，采用彩陶/彩色亚克力/实验对比器物形成强反差 | 严禁重复 P01 材质与暗色背景 |
+| **主图 4 · 课堂剧场/拓展收官** | P11 | 等轴测全息课堂交互沙盘或真实建筑/科学地标摄影 | 严禁重复 P01 静物构图 |
 
-> **P03（猜想分工）、P05（公式高潮推导）、P07（例题精讲）一律不生成 AI 照片**，直接调用 `ppt_kit.py` 原生矢量图解（`add_equal_base_height_gauge`、`add_three_to_one_derivation_graphic`、`add_cone_blueprint_card`）——信息密度更准、希沃白板可拆改、彻底消灭配图同质化！
+> **P03（探究/脉络）、P05（核心推导/概念中枢）、P07（例题/结构精讲）一律不贴 AI 照片**，直接调用 `scripts/ppt_kit.py` 原生可编辑矢量组件（`add_process_timeline_card`、`add_comparison_matrix_card`、`add_concept_hub_card`、`add_subject_blueprint_card` 或立体几何专属组件）！
 
 ### `ImageGen` 每张图必填 6 段提示词公式
-
 ```text
-[1. 镜头与单幅构图约束]
-  - 写明机位角度、焦段与单幅连续构图：ONE single continuous unbroken scene — STRICTLY NO split-screen, NO diptych border, NO vertical divider line, NO collage frames.
-[2. 主体物理与几何精确锚定]
-  - 写死不可出错的学科几何/科学形态（如圆锥必为针尖锐顶 <2mm，严禁平顶杯；反例必须肉眼一眼看出“宽矮 vs 细高”强烈对比）。
-[3. 材质、布光与差异化色温锁定]
-  - 按上表 4 种不同视觉世界锁死材质、自然光/博物馆顶光/曜石暗光与背景色，避免整套课件像同一种塑料模板。
-[4. PPT 原生排版安全负空间配比]
-  - 全出血封面：主体严锁右 48%，左 48% 干净负空间；跨页半幅图：四周留足安全边不裁切主体。
-[5. 干净无杂物约束]
-  - Zero extra props, zero floating hands, zero cartoon outlines, zero clipart/vector look.
-[6. 零文字硬负向约束（每条必带！）]
-  - Strictly NO text, NO letters, NO numbers, NO formulas, NO tick labels, NO arrows, NO captions, NO logos, NO watermarks anywhere in the image.
+[1. 镜头与单幅构图约束] ONE single continuous unbroken scene — STRICTLY NO split-screen, NO diptych border, NO collage frames.
+[2. 主体学科形态精确锚定] 写死不可出错的几何/物理/器物/时代细节（如圆锥针尖锐顶、凸透镜双凸曲率、宋代服饰器物准确）。
+[3. 材质、布光与差异化色温锁定] 按 4 槽位锁定自然日光 / 暖白顶光 / 暗室激光 / 宋画宣纸光感，杜绝塑料感同质化。
+[4. PPT 原生排版安全负空间配比] 封面主体锁右 48%、左 48% 净留白；半幅插图四周留安全余量防裁切。
+[5. 干净无杂物约束] Zero extra props, zero floating hands, zero cartoon outlines, zero clipart look.
+[6. 零文字硬负向约束] Strictly NO text, NO letters, NO numbers, NO formulas, NO arrows, NO logos, NO watermarks anywhere.
 ```
 
 ---
 
-## 二、Three.js 代码驱动教学演示视频工程规范（`render_video.mjs`）
+## 二、Three.js 全学科代码驱动教学视频规范（`k12_studio.py render-video`）
 
-### 1. 为什么用内置 Three.js 引擎，而不用 AI 视频或重型 Remotion？
-- **100% 教学准确**：物体尺寸、等底等高对齐、1/3→2/3→3/3 容积增长、3D 沙粒/液滴下落轨迹与实时数字卡片全由数学方程单源驱动，绝不穿帮。
-- **0 角标、0 外部依赖**：直接复用本 Skill 内置的 `assets/three.min.js`（593 KB）与 `assets/video_stage.html`，无需安装数百 MB 的 `node_modules` 或 Remotion；自带纯 Node 合成拟声音频（倾倒沙声/水流声/清脆刻度音叉/收官和弦）。
-- **全学科通用**：通过编写约 **180–320 行** 的纯 JS 场景脚本 `.build/video_scene.js` 并调用 `VIDEO_STAGE.register({ ... })`，即可渲染任意学科 3D 动效大片。
+### 1. 内置全学科 3D 实验与可视化基元速查（`ctx.helpers`，编写 `<work_dir>/scene.js` 直接调用）
+1. **舞台灯光、背景主题与桌面**：
+   - `registered.theme` 支持 5 套学科背景：`'obsidian'`（数学深海曜石）、`'laser'`（理化暗室光学）、`'emerald'`（生物显微深翠）、`'ink'`（语文/史地宋画青绿墨韵）、`'linen'`（明亮暖亚麻）。
+   - `helpers.setupStudioLights({ theme })`、`helpers.makeMarbleTable(w, d, dark)`。
+2. **数学 / 化学透明量器与倾倒粒子流**：
+   - `helpers.createCrystalCylinder({ radius, height, ringFractions })` → `.setFill(frac, moundAmp)`、`.setRingGlow(idx, flash)`
+   - `helpers.createCrystalConeVessel({ radius, height, x, z })` → `.setFill(remFrac)`（玻璃壳刚性不变，内部按立方根守恒缩放）、`.solvePourPose(targetSpoutVec3, tiltRad)`
+   - `helpers.createPourStream({ count, color })` → `.update(active, startVec, endVec, t, flowEnv)`
+3. **物理光学与力学矢量基元**：
+   - `helpers.createLaserBeam({ points, color, radius, glowOpacity })` → `.setPoints([v0, v1, v2, ...])`（多段准直高光激光束，精确演示反射定律、斯涅尔折射、全反射与透镜聚焦）
+   - `helpers.createOpticalElement({ kind: 'convex'|'concave'|'prism'|'mirror', width, height, depth, x, y, z })`
+   - `helpers.create3DArrow({ from, to, color, shaftRadius, headLength })` → `.setEndpoints(fromVec, toVec)`（三维受力分析、速度合成、空间坐标轴）
+4. **化学微观球棍分子基元**：
+   - `helpers.createMolecule({ atoms: [{x,y,z,radius,color}], bonds: [[0,1], ...] })` → `.setAtomPos(idx, vec3)`（键轴自动跟随两端原子实时旋转伸缩！）、`.setBondOpacity(idx, alpha)`（化学键断裂与重组动画）
+5. **生物 / 地理 / 电学三维流道粒子基元**：
+   - `helpers.createFlowPath({ points, closed, tubeRadius, tubeColor, particleCount, particleColor })` → `.update(t, speed, activeFrac)`（半透明三维平滑管道 + 高亮流动粒子群，适用于体肺血液循环、叶脉光合运输、地理水循环水汽河流、闭合电路电流）
+6. **2D 高清数据与公式 HUD（零遮挡安全布局）**：
+   - `helpers.project(vec3)`（3D 坐标转屏幕像素）、`helpers.hud.drawHeader(eyebrow, title, pill)`、`helpers.hud.drawMetricCard(42, 102, 320, 106, ...)`（固定左上角）、`helpers.hud.drawFormulaBanner(42, 102, 540, 104, ...)`（出现时替换左上数据卡，绝不叠画）、`helpers.hud.drawCallout(...)`、`helpers.hud.drawSubtitle(...)`。
+7. **确定性纯函数与拟声音效（`audioCues`）**：
+   - `renderFrame(ctx, frame, t, duration, progress)` 严禁调 `Math.random()`（统一用 `ctx.seededRng()`）；`audioCues` 支持 `'pour'`、`'water'`、`'whoosh'`、`'chime'`、`'fanfare'` 自动合成 44.1kHz 音轨。
 
-### 2. 场景脚本编写铁律（`VIDEO_STAGE.register`）
-1. **确定性纯函数**：`renderFrame(ctx, frame, t, duration, progress)` 只依赖 `t` 与 `progress`（随机数一律用 `ctx.seededRng()`），绝不使用 `Date.now()` 或 `Math.random()`，确保每一帧零闪烁。
-2. **强制复用内置 3D 实验器皿与运动学组件（严禁徒手写穿模/倒尖顶圆锥！）**：
-   - `video_stage.html` 已内置通过实机验真的透明水晶器皿与粒子流组件（130–220 行即可写出电影级精确演示，绝不缩小玻璃壳或从圆锥尖顶倒沙！）：
-     - `const cyl = helpers.createCrystalCylinder({ radius: 0.86, height: 2.58, ringFractions: [1/3, 2/3, 1] })` → `cyl.group.position.set(2.55, 0, 0); scene.add(cyl.group);`；每帧调用 `const topY = cyl.setFill(fill01, moundAmp)` 与 `cyl.setRingGlow(k, flash)`。
-     - `const cone = helpers.createCrystalConeVessel({ radius: 0.86, height: 2.58, x: cx })` → **开口朝上的刚性空心水晶圆锥 + 独立透明底座**，`scene.add(cone.standGroup); scene.add(cone.moveGroup);`；每帧调用 `cone.setFill(remFrac)`（玻璃壳恒定不变，仅内部细沙按体积立方根缩小！），倾倒时直接用 `const pose = cone.solvePourPose(new THREE.Vector3(cylX - 0.08, H + 0.34, 0), tiltRad)`（`tiltRad` 从 `-1.98` 平滑到 `-2.28`），圆锥本体自然悬在圆柱左上方、敞口正对圆柱中心！
-     - `const stream = helpers.createPourStream({ count: 220 })` → `scene.add(stream.group);`；每帧调用 `stream.update(active, pose.spoutWorld, new THREE.Vector3(cylX, topY, 0), t, flowEnv)`。
-   - **镜头安全距与 HUD 零碰撞**：相机放在 `(-0.35, 3.55, 12.2)`、盯向 `(-0.2, 1.95, 0)` 确保抬起倾倒的圆锥 100% 留在画幅内；实时数据卡 `helpers.hud.drawMetricCard(42, 102, 320, 106, ...)` 固定放在**左上角**（标题下方），把右上半区完整留给空中倾倒圆锥，绝不遮挡！**片尾结论横幅（`drawFormulaBanner(42, 102, 540, 104, ...)`）出现时必须隐藏/替代左上角实时数据卡，严禁两张卡片同时叠画！**
-3. **其余内置灯光、材质与 HUD 工具（直接调用 `ctx.helpers`）**：
-   - `helpers.setupStudioLights({ theme })`（支持 `'obsidian'` / `'linen'` / `'laser'`）
-   - `helpers.makeMarbleTable(w, d, dark)` / `helpers.makeGlassMat()` / `helpers.makeBrassMat()` / `helpers.makeSandMat()`
-   - `helpers.project(vec3)`（3D 转 2D 像素坐标，画 `1/3`、`2/3`、`3/3 满` 实时跟随标牌）
-   - `helpers.hud.drawHeader(...)`、`helpers.hud.drawMetricCard(...)`、`helpers.hud.drawFormulaBanner(...)`、`helpers.hud.drawSubtitle(...)`、`helpers.hud.drawCallout(...)`
-4. **拟声音频节拍（`audioCues`）**：支持 `'pour'`（细沙流）、`'water'`（流水）、`'whoosh'`（转场气声）、`'chime'`（刻度晶铃）、`'fanfare'`（结论和弦），自动合成为带 AAC 音轨的离线 MP4。
-
-### 3. 一键渲染与单图 16 帧高效验收（限 1 次渲染，严禁抽单帧反复空转！）
+### 2. 一键双轨渲染与单图 16 帧验收
 ```bash
-node "{skill_dir}/scripts/render_video.mjs" \
-  --scene .build/video_scene.js \
+python "{skill_dir}/k12_studio.py" render-video \
+  --scene "<work_dir>/scene.js" \
   --out "演示视频/<课题>_3D代码演示.mp4" \
-  --poster .build/video_poster.png \
+  --compact-out "<work_dir>/video_compact.mp4" \
+  --poster "<work_dir>/video_poster.png" \
   --poster-sec 8.5 \
-  --contact-sheet .build/video_contact_sheet.png
+  --contact-sheet "<work_dir>/video_sheet.png"
 ```
-- **高效纪律**：直接调用内置 `createCrystalCylinder / createCrystalConeVessel / createPourStream` 一次写准，渲染完毕后**只需用 `ViewImage` 看 1 张 `.build/video_contact_sheet.png`**；确认无穿模无遮挡后**立即进入下一步生图与 PPT 拼装，严禁额外抽取多张单帧反复微调耗尽轮数！**
-- 验收通过后，若 MP4 > 1.8 MB 可用 `ffmpeg` 压一份 `960×540` 轻量化副本供单文件离线 HTML base64 内嵌；PPT 第 4 页直接用 `ppt_kit.py` 的 `add_video_slide()` 内嵌该 MP4 + `--poster` 封面帧。
-
----
-
-## 三、全学科差异化 `ImageGen` + Three.js 代码视频配方速查
-
-| 学科 | PPT 4 槽位差异化 `ImageGen` 题材（严禁雷同） | Three.js 代码视频（`render_video.mjs`）黄金场景 |
-|---|---|---|
-| **数学** | P01 曜石几何雕塑封面 / P02 日光户外实景（粮堆/建筑）/ P06 暖白台面彩陶反例教具 / P11 全息交互舞台 | 3 满金沙圆锥精确倾倒填满等底等高圆柱（含实时体积卡与 `1/3` 刻度脉冲）；圆柱侧面展平；32 份扇形咬合长方体 |
-| **物理** | P01 暗室光学棱镜 / P02 日光真实生活现象（彩虹/潜望镜）/ P06 浅灰实验台反例对比 / P11 光学实验室全景 | 3D 激光束精确遵循斯涅尔定律折射与全反射演示；凸透镜移动物距实时成像动画；单摆周期对比 |
-| **化学** | P01 暗调晶体分子艺术 / P02 日光厨房/自然界反应实景 / P06 暖白实验台对比烧杯 / P11 现代化学实验室 | 3D 分子键断裂与重组动画；滴定液滴落引发溶液颜色连续渐变与沉淀生成 |
-| **生物** | P01 显微荧光生命雕塑 / P02 自然日光生态摄影 / P06 亮色解剖教具对比 / P11 生态观察台 | 3D 血管中红细胞流经肺泡携氧变色；叶片叶绿体光合能量流动画 |
-| **语文 / 英语 / 史地** | P01 宋画/胶片主题封面 / P02 日光人文地理实景 / P06 对比器物或风貌静物 / P11 主题舞台 | 3D 立体地形沙盘水循环与发光河流路径；古诗意象镜头漫游与逐句光影字幕；3D 方位介词微缩方块演播 |
+- 一步同时产出 PPT 高清内嵌版 MP4、离线 HTML 轻量化 `960×540` MP4、高清封面帧与 4×4 16 格总览图；仅用 `ViewImage` 检查 1 张 `<work_dir>/video_sheet.png` 无穿模无遮挡后立即推进下一步。

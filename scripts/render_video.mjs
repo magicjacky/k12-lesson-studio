@@ -23,6 +23,7 @@ function parseArgs(argv) {
     poster: null,
     posterSec: null,
     contactSheet: null,
+    compactOut: null,
     width: 0,
     height: 0,
     fps: 0,
@@ -36,6 +37,7 @@ function parseArgs(argv) {
     else if (k === '--poster') { opts.poster = path.resolve(v); i++; }
     else if (k === '--poster-sec') { opts.posterSec = Number(v); i++; }
     else if (k === '--contact-sheet') { opts.contactSheet = path.resolve(v); i++; }
+    else if (k === '--compact-out') { opts.compactOut = path.resolve(v); i++; }
     else if (k === '--width') { opts.width = Number(v); i++; }
     else if (k === '--height') { opts.height = Number(v); i++; }
     else if (k === '--fps') { opts.fps = Number(v); i++; }
@@ -377,11 +379,33 @@ async function main() {
       }
     }
 
+    // Optional compact 960x540 MP4 for single-file offline HTML embedding
+    let compactBytes = null;
+    if (opts.compactOut) {
+      fs.mkdirSync(path.dirname(opts.compactOut), { recursive: true });
+      const cpArgs = [
+        '-y', '-i', opts.out,
+        '-vf', 'scale=960:540',
+        '-c:v', 'libx264', '-profile:v', 'main', '-pix_fmt', 'yuv420p', '-crf', '24', '-preset', 'medium',
+        ...(hasAudio ? ['-c:a', 'aac', '-b:a', '96k'] : ['-an']),
+        '-movflags', '+faststart',
+        opts.compactOut
+      ];
+      const cpRes = spawnSync(ffmpegBin, cpArgs, { encoding: 'utf8' });
+      if (cpRes.status === 0 && fs.existsSync(opts.compactOut)) {
+        compactBytes = fs.statSync(opts.compactOut).size;
+      } else {
+        console.error('Compact video warning:', (cpRes.stderr || '').slice(-300));
+      }
+    }
+
     const outBytes = fs.statSync(opts.out).size;
     console.log(JSON.stringify({
       passed: true,
       out: opts.out,
       bytes: outBytes,
+      compact_out: opts.compactOut || null,
+      compact_bytes: compactBytes,
       width: meta.width,
       height: meta.height,
       fps: meta.fps,

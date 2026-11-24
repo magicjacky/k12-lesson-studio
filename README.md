@@ -4,15 +4,15 @@
 
 <h1>K12 Lesson Studio · 中小学全学科课件一键制作</h1>
 
-**面向 AI Agent 的中小学全学科工程级备课技能（全包 < 0.85 MB · 零重型依赖）**
+**面向 AI Agent 的中小学全学科工程级备课技能（全包 < 0.90 MB · 统一单入口 CLI · 零重型依赖）**
 
-输入正版教材 PDF 或教学课题，串联完成 5 步可验真备课闭环：真教材版本核验与防超纲清单 · 带课堂救场表的打印版 Word 教案 · 视觉零重复希沃可编辑 11 页 PPT · 内置 Three.js 确定性代码渲染 0 角标 3D 教学视频 · 断网单文件 3D 互动实验与 4 队大屏 PK 网页 · Python 断言验算试卷与错题急救卡。
+输入正版教材 PDF（兼容电子版与纯图片扫描件）或教学课题，通过统一入口 `k12_studio.py` 串联完成 5 步可验真备课闭环：真教材版本核验与防超纲清单 · 带课堂救场表的打印版 Word 教案 · 视觉零重复希沃可编辑 11 页全学科 PPT · 内置 Three.js 确定性代码渲染 0 角标 3D 教学视频 · 断网单文件全学科主题 3D 互动实验与 4 队大屏 PK 网页 · 单源验算学生作答卷/教师红笔解析卷与错题急救卡。
 
 [![GitHub stars](https://img.shields.io/github/stars/magicjacky/k12-lesson-studio?style=flat-square&color=E2B45A&logo=github)](https://github.com/magicjacky/k12-lesson-studio/stargazers)
 [![WorkBuddy](https://img.shields.io/badge/WorkBuddy-Native%20ZH-155E68?style=flat-square)](#安装方式)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Skill-D97757?style=flat-square)](#安装方式)
 [![Codex](https://img.shields.io/badge/Codex-Skill-111111?style=flat-square)](#安装方式)
-[![Size](https://img.shields.io/badge/Skill%20Size-%3C%200.85%20MB-C69749?style=flat-square)](#仓库结构)
+[![Size](https://img.shields.io/badge/Skill%20Size-%3C%200.90%20MB-C69749?style=flat-square)](#仓库结构)
 [![License](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-0D7A55?style=flat-square)](LICENSE)
 
 **简体中文** · [English](./README.en.md)
@@ -151,11 +151,11 @@ npx skills add https://github.com/magicjacky/k12-lesson-studio --skill k12-lesso
 
 | 模块 | 文件路径 | 核心职责与硬性门禁 |
 |---|---|---|
-| **环境自检与自动装包** | `scripts/doctor.py` | 纯标准库体检 Python 包、Node.js、Chrome/Edge、ffmpeg；`setup --mirror` 自动镜像补齐 |
-| **真教材与 Word 引擎** | `scripts/extract_textbook.py`<br>`scripts/md_to_docx.py` | 无损页码节选 + 书签导出；精炼 A4 教学 Word 排版（支持 `--compact` 控页） |
-| **Three.js 代码视频引擎** | `assets/three.min.js`<br>`assets/video_stage.html`<br>`scripts/render_video.mjs` | 零 `npm` 依赖，内置刚性透明器皿/精确倾倒运动学反解/粒子流/拟声音频 WAV 合成，直出 1280×720 30fps MP4 + 封面帧 + 4×4 16 格检查表 |
-| **PPT 杂志与矢量蓝图库** | `scripts/ppt_kit.py`<br>`scripts/audit_pptx.py` | 4 套学科色板 + 原生矢量标尺/推导图/标注蓝图 + 离线视频页 + 原生转场；自动验真 **0 重复图片（SHA-256）、0 占位符、0 越界、0 重叠、全页 Notes** 与 LibreOffice 单图总览 |
-| **离线大屏互动剧场** | `assets/theater_base.html`<br>`scripts/build_html.py`<br>`scripts/audit_html.mjs` | 1280×720 安全区、俯视 3D 相机、离线视频同步播放、4 队光影柱 PK 与 `<dialog>` 事件委托；自动校验 0 外链、0 报错、按钮实点关闭并输出 4×4 关键帧拼图 |
+| **统一 CLI 与包自检** | `k12_studio.py`<br>`scripts/doctor.py` | 12 个子命令统一调度；纯标准库环境体检与清华镜像一键装包；`package-audit` 静态扫描目录层级与文件引用完整性 |
+| **真教材与双卷 Word 引擎** | `scripts/extract_textbook.py`<br>`scripts/md_to_docx.py`<br>`scripts/verify_exam.py`<br>`assets/exam_spec.schema.json` | 电子版/扫描版 PDF 自动识别、书签节选与扫描页自动渲染拼图；单源 100 分双卷导出（学生虚线答题栏 + 防漏答案、教师朱砂红解析）与单源阅卷统计 |
+| **Three.js 全科视频引擎** | `assets/three.min.js`<br>`assets/video_stage.html`<br>`scripts/render_video.mjs` | 零 `npm` 依赖，内置器皿倾倒、激光透镜光路、3D 球棍分子、血管/水循环粒子管道、三维力矢量箭头与拟声 WAV 合成，一键双轨直出 1280×720 MP4 + 960×540 轻量 MP4 + 16 格检查表 |
+| **全学科 PPT 矢量与版式库** | `scripts/ppt_kit.py`<br>`scripts/audit_pptx.py` | 全科色板 + 自动居中裁切零拉伸 + 原生矢量脉络轴/双栏对比/概念中枢/几何光路蓝图/梯度练兵/避坑矩阵/汇总表；强校验 **0 重复图片（SHA-256）、0 越界、0 重叠、全页 Notes** |
+| **离线大屏互动剧场** | `assets/theater_base.html`<br>`assets/theater_config.schema.json`<br>`scripts/build_html.py`<br>`scripts/audit_html.mjs` | 全学科主题预设、1280×720 安全区、俯视 3D 相机、离线视频同步、4 队光影柱 PK 与 `<dialog>` 事件委托；自动校验 0 外链、0 报错、按钮实点关闭并输出 4×4 关键帧拼图 |
 
 ---
 
@@ -176,24 +176,28 @@ Skill 根据教材或课题自动识别学科与学段，查阅 `references/subj
 ## 5 步工作流与验收脚本
 
 ```bash
-# 0. 环境体检（缺库时运行 setup --mirror）
-python scripts/doctor.py doctor
+# 0. 环境体检与静态包完整性自检（缺库时运行 setup --mirror）
+python k12_studio.py doctor
+python k12_studio.py package-audit
 
-# 1. 教材 PDF 扫描与原页节选
-python scripts/extract_textbook.py --help
+# 1. 教材 PDF 扫描与原页节选（自动识别扫描件并渲染页面拼图）
+python k12_studio.py scan-pdf "01-教材/课本.pdf" --keyword "圆柱"
+python k12_studio.py extract-pdf "01-教材/课本.pdf" --start 18 --end 40 --out-pdf "01-教材/节选.pdf" --out-txt .build/raw.txt
 
-# 2. Markdown 教案/试卷转精炼 A4 Word
-python scripts/md_to_docx.py input.md output.docx --compact
+# 2. 渲染 Three.js 确定性 3D 代码演示视频（同步产出 PPT 高清版 + HTML 轻量版 + 16 格检查表）
+python k12_studio.py render-video --scene .build/scene.js --out "演示视频/demo.mp4" --compact-out .build/compact.mp4 --poster .build/poster.png --contact-sheet .build/video_sheet.png
 
-# 3. 渲染 Three.js 确定性 3D 代码演示视频 + 封面帧 + 16 格检查表
-node scripts/render_video.mjs --scene .build/video_scene.js --out "演示视频/demo.mp4" --poster .build/poster.png --contact-sheet .build/video_sheet.png
+# 3. 验收可编辑 PPT（含 SHA-256 重复图拦截、重叠检测与 LibreOffice 总览拼图）
+python k12_studio.py audit-pptx "03-授课PPT/课件.pptx" --render-sheet .build/ppt_sheet.png
 
-# 4. 验收可编辑 PPT（含 SHA-256 重复图拦截、重叠检测与 LibreOffice 总览拼图）
-python scripts/audit_pptx.py "03-授课PPT/课件.pptx" --render-sheet .build/ppt_sheet.png
+# 4. 拼装单文件离线大屏 HTML 并执行无头浏览器全自动点击验收
+python k12_studio.py build-html --config .build/theater_config.json --scenes .build/theater_scenes.js --video .build/compact.mp4 --poster .build/poster.png --out "04-大屏互动HTML/lab.html"
+python k12_studio.py audit-html "04-大屏互动HTML/lab.html" --shots-dir .build/audit_shots
 
-# 5. 拼装单文件离线大屏 HTML 并执行 Chrome CDP 全自动验收 + 4×4 关键帧拼图
-python scripts/build_html.py --config .build/theater_config.json --scenes .build/theater_scenes.js --video .build/compact.mp4 --poster .build/poster.jpg --out "04-大屏互动HTML/lab.html"
-node scripts/audit_html.mjs "04-大屏互动HTML/lab.html" .build/audit_shots
+# 5. 单源 100 分试卷验算并导出学生作答卷（带虚线答题栏）与教师朱砂红解析卷
+python k12_studio.py verify-exam .build/exam_spec.json --export-student-md .build/student.md --export-teacher-md .build/teacher.md
+python k12_studio.py docx .build/student.md "05-课后测改补/学生卷.docx" --mode student --compact
+python k12_studio.py docx .build/teacher.md "05-课后测改补/教师卷.docx" --mode teacher --compact
 ```
 
 ---
@@ -202,34 +206,37 @@ node scripts/audit_html.mjs "04-大屏互动HTML/lab.html" .build/audit_shots
 
 ```text
 k12-lesson-studio/
-├─ SKILL.md                          # Agent Skill 主规范与 WorkBuddy 中文元数据
+├─ k12_studio.py                     # 统一单入口命令行（12 个全流程与验收子命令）
+├─ SKILL.md                          # Agent Skill 主规范与 WorkBuddy 中文元数据（v5.1）
 ├─ workbuddy.json                    # WorkBuddy 市场展示配置与示例提示词
 ├─ _icon.svg                         # 技能专属矢量图标
 ├─ LICENSE                           # PolyForm Noncommercial License 1.0.0
 ├─ requirements.txt                  # Python 依赖清单（pymupdf / python-docx / python-pptx / pillow）
 ├─ assets/
 │  ├─ three.min.js                   # 内置单文件 Three.js r147（593 KB，零 npm 依赖）
-│  ├─ video_stage.html               # Three.js PBR 影棚舞台、刚性器皿组件与 HUD 底盘
-│  └─ theater_base.html              # 1280×720 全学科离线大屏互动剧场与 4 队 PK 底盘
+│  ├─ video_stage.html               # 全学科 Three.js PBR 舞台（器皿/激光透镜/分子/流道/力矢量）
+│  ├─ theater_base.html              # 1280×720 全学科主题离线大屏互动剧场与 4 队 PK 底盘
+│  ├─ theater_config.schema.json     # 互动剧场 JSON 配置 Schema
+│  └─ exam_spec.schema.json          # 100 分单源试卷 JSON Schema
 ├─ scripts/
 │  ├─ doctor.py                      # 环境自检与清华镜像一键装包
-│  ├─ extract_textbook.py            # 正版教材 PDF 核验与无损页码节选
-│  ├─ md_to_docx.py                  # A4 打印版教学 Word 生成器
-│  ├─ render_video.mjs               # Chrome CDP 确定性逐帧渲染 + 拟声音频 WAV/MP4 合成器
-│  ├─ ppt_kit.py                     # 16:9 博物馆杂志可编辑 PPT 与原生矢量图解库
+│  ├─ extract_textbook.py            # 电子/扫描教材识别、书签节选与扫描页自动渲染拼图
+│  ├─ md_to_docx.py                  # A4 教学 Word 生成器（支持学生虚线答题栏、教师红笔解析、急救卡分页）
+│  ├─ render_video.mjs               # Chrome CDP 确定性逐帧渲染 + 拟声音频 WAV/MP4 双轨合成器
+│  ├─ ppt_kit.py                     # 全学科 16:9 可编辑 PPT 版式与原生矢量图解库（自动居中裁切零拉伸）
 │  ├─ audit_pptx.py                  # PPTX 重复图拦截、重叠检测、Notes 与视频验真脚本
-│  ├─ build_html.py                  # 离线单文件大屏互动网页拼装器
+│  ├─ build_html.py                  # 离线单文件大屏互动网页拼装与题库校验器
 │  ├─ audit_html.mjs                 # 离线 HTML 零外链、弹窗实点与 4×4 关键帧自动验收
-│  └─ verify_exam.py                 # 100 分试卷分值核验与批量阅卷单源防矛盾校验器
+│  └─ verify_exam.py                 # 100 分双卷单源导出与批量阅卷防矛盾统计器
 └─ references/
-   ├─ media-prompt-engineering.md    # 4 槽位视觉防重复矩阵与 Three.js 视频脚本规范
-   ├─ themes.md                      # 11 页视觉零重复分镜矩阵与 4 套学科策展色板
-   ├─ subject-playbooks.md           # 7 大学科自动路由与防错红线
-   ├─ interactive-html-blueprint.md  # 数学/几何不变量合同与 THEATER API 指南
-   └─ lesson-and-exam-templates.md   # 教材清单 6 段模板、教案救场表与防幻觉出卷规范
+   ├─ media-prompt-engineering.md    # 4 槽位视觉防重复矩阵与 Three.js 全科 3D 基元规范
+   ├─ themes.md                      # 11 页全科分镜矩阵与学科策展色板
+   ├─ subject-playbooks.md           # 语数英理化生史地道法自动路由与防错红线
+   ├─ interactive-html-blueprint.md  # 几何/科学不变量合同与 THEATER API 指南
+   └─ lesson-and-exam-templates.md   # 教材清单 6 段模板、教案救场表与单源双卷规范
 ```
 
-> **WorkBuddy 开放平台打包说明**：提交至 WorkBuddy 开放平台时，压缩包遵循官方两级目录规范（仅打包 `SKILL.md`、`workbuddy.json`、`_icon.svg`、`LICENSE`、`requirements.txt`、`assets/`、`references/`、`scripts/`，不包含 `docs/images/`），打包体积仅约 **235 KB**（未压缩 < 0.85 MB），远低于 3 MB 上限。
+> **WorkBuddy 开放平台打包说明**：提交至 WorkBuddy 开放平台时，压缩包遵循官方两级目录规范（仅打包上述 25 个核心运行与参考文件，不包含 `docs/images/`），打包体积约 **250 KB**（未压缩 < 0.90 MB），内置 `python k12_studio.py package-audit` 静态完整性扫描，远低于 3 MB 上限。
 
 ---
 

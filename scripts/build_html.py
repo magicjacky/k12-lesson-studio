@@ -13,6 +13,7 @@ import argparse
 import base64
 import json
 import pathlib
+import re
 import sys
 
 
@@ -26,8 +27,22 @@ def validate_config(cfg: dict) -> None:
     missing = [k for k in required if k not in cfg]
     if missing:
         raise ValueError(f"config.json missing required keys: {missing}")
+    if len(cfg["films"]) < 1:
+        raise ValueError("config.json must define at least 1 film scene")
+    for f_idx, fm in enumerate(cfg["films"], 1):
+        fm.setdefault("num", f"{f_idx:02d}")
+        if not fm.get("name"):
+            pill = str(fm.get("pill", "")).strip()
+            fm["name"] = re.sub(r"^\d+[\s.·、-]*", "", pill).strip() if pill else str(fm.get("title", f"分镜{f_idx}"))[:8]
     if len(cfg["teams"]) != 4:
         raise ValueError(f"config.json must define exactly 4 teams, got {len(cfg['teams'])}")
+    for t_idx, tm in enumerate(cfg["teams"], 1):
+        if not tm.get("name"):
+            raise ValueError(f"Team {t_idx} missing 'name'")
+        if not (tm.get("color") or tm.get("c")):
+            raise ValueError(f"Team {t_idx} must specify hex 'color' (e.g. '#38BDF8')")
+        tm.setdefault("color", tm.get("c"))
+        tm.setdefault("short", tm.get("tag") or tm["name"])
     if len(cfg["questions"]) < 4:
         raise ValueError(f"config.json must define at least 4 PK questions, got {len(cfg['questions'])}")
     for idx, q in enumerate(cfg["questions"], 1):
@@ -73,7 +88,7 @@ def main() -> int:
         "__BRAND_TAG__": str(cfg["brandTag"]),
         "__VIDEO_POSTER__": poster_uri,
         "__VIDEO_SRC__": video_uri,
-        "__VIDEO_CAPTION__": str(cfg.get("videoCaption", "10 秒实景演示大片 · 离线直放")),
+        "__VIDEO_CAPTION__": str(cfg.get("videoCaption", "3D 代码演示 · 离线直放")),
         "__CONFIG_JSON__": cfg_json,
         "__SCENES_JS__": scenes_safe,
     }

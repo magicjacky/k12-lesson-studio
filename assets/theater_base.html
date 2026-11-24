@@ -444,8 +444,20 @@ window.CONFIG = __CONFIG_JSON__;
   const rand = (a, b) => a + Math.random() * (b - a);
 
   const CFG = window.CONFIG || {};
-  if (CFG.theme) {
-    Object.keys(CFG.theme).forEach(k => document.documentElement.style.setProperty('--' + k, CFG.theme[k]));
+  const THEME_PRESETS = {
+    math: { bg0: '#060E14', bg1: '#0A1922', bg2: '#0E1F2A', gold: '#E9C489', gold2: '#F7E2B8', gold3: '#B98A45', teal: '#6FE0D2', teal2: '#2FA9A0', coral: '#F08A6B' },
+    chinese: { bg0: '#0B1715', bg1: '#122421', bg2: '#1A322E', gold: '#E4BA6C', gold2: '#F8DFAC', gold3: '#B5893D', teal: '#7AC7B8', teal2: '#3B8F80', coral: '#DF6D59' },
+    history: { bg0: '#0E1419', bg1: '#162028', bg2: '#1E2C37', gold: '#E5B96E', gold2: '#F7DFB2', gold3: '#B3853B', teal: '#79C4D6', teal2: '#3B8DA1', coral: '#E2725B' },
+    geography: { bg0: '#07141A', bg1: '#0D222B', bg2: '#14303C', gold: '#E6C07B', gold2: '#F7E1B5', gold3: '#B28A44', teal: '#65DBCB', teal2: '#2C9E90', coral: '#EE8566' },
+    english: { bg0: '#0B1224', bg1: '#131E38', bg2: '#1B2A4D', gold: '#F4C158', gold2: '#FCE19D', gold3: '#C28F2C', teal: '#6DC8FF', teal2: '#3B82F6', coral: '#F2785C' },
+    science: { bg0: '#050D18', bg1: '#0B192C', bg2: '#11253E', gold: '#38BDF8', gold2: '#BAE6FD', gold3: '#0284C7', teal: '#34D399', teal2: '#059669', coral: '#F59E0B' },
+    physics: { bg0: '#050D18', bg1: '#0B192C', bg2: '#11253E', gold: '#38BDF8', gold2: '#BAE6FD', gold3: '#0284C7', teal: '#34D399', teal2: '#059669', coral: '#F59E0B' },
+    chemistry: { bg0: '#06101B', bg1: '#0C1D30', bg2: '#132B45', gold: '#60A5FA', gold2: '#DBEAFE', gold3: '#2563EB', teal: '#2DD4BF', teal2: '#0D9488', coral: '#FB923C' },
+    biology: { bg0: '#061511', bg1: '#0C241E', bg2: '#13352C', gold: '#E8BC5A', gold2: '#FADF9E', gold3: '#B5892E', teal: '#4ADE80', teal2: '#16A34A', coral: '#F97316' }
+  };
+  const resolvedTheme = typeof CFG.theme === 'string' ? THEME_PRESETS[CFG.theme.toLowerCase()] : CFG.theme;
+  if (resolvedTheme && typeof resolvedTheme === 'object') {
+    Object.keys(resolvedTheme).forEach(k => document.documentElement.style.setProperty('--' + k, resolvedTheme[k]));
   }
   const FILMS = CFG.films || [];
   window.FILMS = FILMS;
@@ -534,7 +546,7 @@ window.CONFIG = __CONFIG_JSON__;
   function resetCam(){ cam.userYaw = 0; cam.userPitch = 0; }
 
   /* 几何与绘图工具 */
-  function hex2rgb(h){ h = h.replace('#', ''); if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2]; return [parseInt(h.substr(0,2),16), parseInt(h.substr(2,2),16), parseInt(h.substr(4,2),16)]; }
+  function hex2rgb(h){ h = String(h || '#E9C489').replace('#', ''); if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2]; return [parseInt(h.substr(0,2),16)||233, parseInt(h.substr(2,2),16)||196, parseInt(h.substr(4,2),16)||137]; }
   function rgba(h, a){ const c = hex2rgb(h); return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
   function shadeHex(h, k){ const c = hex2rgb(h); return 'rgb(' + Math.round(clamp(c[0]*k,0,255)) + ',' + Math.round(clamp(c[1]*k,0,255)) + ',' + Math.round(clamp(c[2]*k,0,255)) + ')'; }
   function poly(pts, close){ if (!pts.length) return; ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y); if (close !== false) ctx.closePath(); }
@@ -623,9 +635,12 @@ window.CONFIG = __CONFIG_JSON__;
   function buildScrubber(){
     const filmsEl = $('#films'), beatsEl = $('#beats'), trackEl = $('#track');
     FILMS.forEach((f, i) => {
+      const numTxt = f.num || String(i + 1).padStart(2, '0');
+      const nameTxt = f.name || (f.pill ? String(f.pill).replace(/^\d+\s*/, '') : (f.title || '分镜'));
+      f.num = numTxt; f.name = nameTxt;
       const b = document.createElement('button');
       b.className = 'filmPill' + (i === 0 ? ' on' : '');
-      b.innerHTML = '<b>' + f.num + '</b><span>' + f.name + '</span>';
+      b.innerHTML = '<b>' + numTxt + '</b><span>' + nameTxt + '</span>';
       b.addEventListener('click', () => switchFilm(i, true));
       filmsEl.appendChild(b);
     });
@@ -647,13 +662,15 @@ window.CONFIG = __CONFIG_JSON__;
     $$('#films .filmPill').forEach((el, i) => el.classList.toggle('on', i === CINE.film));
   }
   function syncCues(p){
-    const f = FILMS[CINE.film]; if (!f || !f.cues) return;
-    let cue = f.cues[0];
-    for (let i = 0; i < f.cues.length; i++) if (p >= f.cues[i].t0) cue = f.cues[i];
-    const key = CINE.film + ':' + f.cues.indexOf(cue);
+    const f = FILMS[CINE.film]; if (!f) return;
+    const rawCues = f.cues || (f.subs ? f.subs.map(s => ({ t0: (s.at || 0) / Math.max(1, f.dur || 10), a: f.name || '', b: s.t || '' })) : null);
+    if (!rawCues || !rawCues.length) return;
+    let cue = rawCues[0], idx = 0;
+    for (let i = 0; i < rawCues.length; i++) if (p >= (rawCues[i].t0 ?? 0)) { cue = rawCues[i]; idx = i; }
+    const key = CINE.film + ':' + idx;
     if (key === CINE.cueKey) return;
     CINE.cueKey = key;
-    $('#subA').textContent = cue.a; $('#subB').textContent = cue.b;
+    $('#subA').textContent = cue.a || ''; $('#subB').textContent = cue.b || '';
   }
   function syncTimeUI(p){
     $('#trackFill').style.width = (p * 100).toFixed(2) + '%';
@@ -675,19 +692,19 @@ window.CONFIG = __CONFIG_JSON__;
   }
   function updateDirector(){
     const f = FILMS[CINE.film];
-    if (f && f.isVideo) { $('#dirVal').textContent = '实景演示视频'; $('#dirVal2').textContent = f.name; return; }
+    if (f && f.isVideo) { $('#dirVal').textContent = '3D 代码演示'; $('#dirVal2').textContent = f.name || ''; return; }
     const d = SCENES.director(CINE.film) || { v1:'—', v2:'—' };
-    $('#dirVal').textContent = d.v1; $('#dirVal2').textContent = d.v2;
+    $('#dirVal').textContent = d.v1 || '—'; $('#dirVal2').textContent = d.v2 || '—';
   }
   function buildVideoCtl(){
     const v = $('#sandVid'); const rate = v ? v.playbackRate : 1;
-    $('#ctlTitle').textContent = '实景大片 · 放映'; $('#ctlHint').textContent = '离线内置 MP4';
+    $('#ctlTitle').textContent = '3D 演示 · 放映'; $('#ctlHint').textContent = '离线内置 MP4';
     const body = $('#ctlBody');
     body.innerHTML =
       '<div class="ctlRow"><label>放映倍速</label><b id="vRate">' + rate.toFixed(1) + '×</b></div>' +
       '<div class="chipRow">' + [0.5, 0.75, 1.0, 1.25].map(r => '<button class="chip' + (Math.abs(r-rate)<.05?' on':'') + '" data-r="' + r + '">' + r + '×</button>').join('') + '</div>' +
-      '<button class="pourBtn" id="vidReplay">从头重播实景演示</button>' +
-      '<div class="ctlNote">点击画面或底部时间轴可随时暂停、慢放，逐秒观察物理过程。</div>';
+      '<button class="pourBtn" id="vidReplay">从头重播 3D 演示</button>' +
+      '<div class="ctlNote">点击画面或底部时间轴可随时暂停、慢放，逐秒观察关键过程。</div>';
     $$('.chip', body).forEach(c => c.addEventListener('click', () => {
       const r = parseFloat(c.dataset.r); if (v) v.playbackRate = r;
       $$('.chip', body).forEach(o => o.classList.toggle('on', o === c));
@@ -779,7 +796,7 @@ window.CONFIG = __CONFIG_JSON__;
   const ARENA = {
     baseY: 552, xs: [660, 832, 1004, 1176], ringH: 23, built: false, plates: [], pads: [], fw: [],
     crown: { x: 1176, y: 320, show: false },
-    teams: (CFG.teams || []).map(t => ({ name: t.name, short: t.short, color: t.color, score: 0, spring: 0, springV: 0, beam: 0, queue: 0, fall: null }))
+    teams: (CFG.teams || []).map(t => ({ name: t.name || '战队', short: t.short || t.tag || t.name || 'TEAM', color: t.color || t.c || '#E9C489', score: 0, spring: 0, springV: 0, beam: 0, queue: 0, fall: null }))
   };
   const PK = { qi: 0, ans: {}, total: 30, remain: 30, running: false, iv: null };
 

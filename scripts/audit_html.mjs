@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * audit_html.mjs — K12 Interactive Big-Screen HTML Automated Verifier (k12-lesson-studio v4.0)
+ * audit_html.mjs — K12 Interactive Big-Screen HTML Automated Verifier (k12-lesson-studio v5.1)
  * Zero external dependencies (uses Node built-ins + local Chrome/Edge CDP).
  *
  * Usage:
@@ -81,7 +81,11 @@ const proc = spawn(BROWSER, [
   '--window-size=1280,720',
   '--hide-scrollbars',
   '--no-first-run',
-  '--disable-gpu',
+  '--enable-webgl',
+  '--ignore-gpu-blocklist',
+  '--use-gl=angle',
+  '--use-angle=swiftshader-webgl',
+  '--enable-unsafe-swiftshader',
   pathToFileURL(HTML_PATH).href,
 ]);
 
@@ -261,6 +265,11 @@ const proc = spawn(BROWSER, [
       const awClosed = await ev('!document.querySelector("#awardDlg[open]")');
       report.modal_checks.award = { awOpen, awClosed };
     }
+  }
+
+  const badText = await ev('(/\\bundefined\\b|\\bNaN\\b/.test(document.body.innerText)) ? document.body.innerText.match(/.{0,20}(?:\\bundefined\\b|\\bNaN\\b).{0,20}/g) : null');
+  if (badText) {
+    report.errors.push('BAD_TEXT: ' + JSON.stringify(badText));
   }
 
   const dimsOk = Object.values(report.dims).every(d => d.sw <= 1280 && d.sh <= 720);

@@ -126,20 +126,34 @@ def render_contact_sheet(pptx_path: pathlib.Path, out_png: pathlib.Path) -> str 
     try:
         import fitz
         from PIL import Image, ImageDraw
+        fitz.TOOLS.mupdf_display_errors(False)
     except Exception:
         return None
-    soffice = shutil.which("soffice") or r"C:\Program Files\LibreOffice\program\soffice.com"
-    if not pathlib.Path(soffice).exists():
+    win_com = pathlib.Path(r"C:\Program Files\LibreOffice\program\soffice.com")
+    soffice = str(win_com) if win_com.exists() else (shutil.which("soffice.com") or shutil.which("soffice"))
+    if not soffice or not pathlib.Path(soffice).exists():
         return None
     with tempfile.TemporaryDirectory(prefix="ppt_audit_") as td:
         tdir = pathlib.Path(td)
-        subprocess.run(
-            [str(soffice), "--headless", "--convert-to", "pdf", "--outdir", str(tdir), str(pptx_path)],
-            check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+        prof_uri = (tdir / "lo_profile").as_uri()
+        proc = subprocess.run(
+            [
+                str(soffice),
+                f"-env:UserInstallation={prof_uri}",
+                "--headless",
+                "--norestore",
+                "--nolockcheck",
+                "--convert-to",
+                "pdf",
+                "--outdir",
+                str(tdir),
+                str(pptx_path),
+            ],
+            capture_output=True,
             timeout=120,
         )
+        if proc.returncode != 0:
+            return None
         pdf_path = tdir / (pptx_path.stem + ".pdf")
         if not pdf_path.exists():
             return None
